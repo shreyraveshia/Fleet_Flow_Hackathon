@@ -112,6 +112,7 @@ export default function TripDispatcher() {
     }, [searchParams, setSearchParams]);
 
     // Status Advance State
+    const [activeTripId, setActiveTripId] = React.useState(null);
     const [statusAction, setStatusAction] = React.useState({ type: '', target: '' });
     const [statusFormData, setStatusFormData] = React.useState({
         endOdometer: '',
@@ -145,7 +146,7 @@ export default function TripDispatcher() {
     const getWeightValidation = () => {
         if (!formData.cargoWeight || !selectedVehicleObj) return null;
         const weight = parseInt(formData.cargoWeight);
-        const capacity = selectedVehicleObj.capacity;
+        const capacity = selectedVehicleObj.maxLoadCapacity;
         const percentage = (weight / capacity) * 100;
         const over = weight - capacity;
 
@@ -178,11 +179,15 @@ export default function TripDispatcher() {
     const handleCreateSubmit = async () => {
         try {
             await createTrip({
-                ...formData,
+                vehicle: formData.vehicleId,
+                driver: formData.driverId,
                 cargoWeight: parseInt(formData.cargoWeight),
-                estimatedDistance: parseInt(formData.estimatedDistance) || 0,
+                cargoDescription: formData.cargoDescription,
+                origin: formData.origin,
+                destination: formData.destination,
+                distance: parseInt(formData.estimatedDistance) || 0,
                 estimatedFuelCost: parseInt(formData.estimatedFuelCost) || 0,
-                estimatedRevenue: parseInt(formData.estimatedRevenue) || 0
+                revenue: parseInt(formData.estimatedRevenue) || 0,
             });
             success('Trip dispatched successfully');
             setIsCreateModalOpen(false);
@@ -192,18 +197,19 @@ export default function TripDispatcher() {
     };
 
     const handleStatusSubmit = async () => {
+        if (!activeTripId) return;
         try {
-            await advanceStatus(selectedTrip._id, {
+            await advanceStatus(activeTripId, {
                 status: statusAction.target,
-                ...statusFormData,
-                endOdometer: parseInt(statusFormData.endOdometer),
-                actualFuelCost: parseInt(statusFormData.actualFuelCost),
-                actualRevenue: parseInt(statusFormData.actualRevenue)
+                note: statusFormData.reason || undefined,
+                endOdometer: statusFormData.endOdometer !== '' ? Number(statusFormData.endOdometer) : undefined,
+                actualFuelCost: statusFormData.actualFuelCost !== '' ? Number(statusFormData.actualFuelCost) : undefined,
+                revenue: statusFormData.actualRevenue !== '' ? Number(statusFormData.actualRevenue) : undefined,
             });
             success(`Trip status updated to ${statusAction.target}`);
             setIsStatusModalOpen(false);
         } catch (err) {
-            error(err.message);
+            error(err.message || 'Failed to update trip status');
         }
     };
 
@@ -216,6 +222,15 @@ export default function TripDispatcher() {
 
     // --- Table Columns ---
     const columns = [
+        {
+            key: '#',
+            label: '#',
+            render: (_row, _col, idx) => (
+                <span className="text-xs font-bold text-slate-400 tabular-nums select-none">
+                    {(pagination.page - 1) * pagination.limit + (idx + 1)}
+                </span>
+            )
+        },
         {
             key: 'tripId',
             label: 'Trip ID',
@@ -234,7 +249,7 @@ export default function TripDispatcher() {
             render: (row) => (
                 <div className="min-w-[120px]">
                     <p className="font-bold text-sm leading-none">{row.vehicle?.name}</p>
-                    <p className="text-[10px] text-slate-500 font-mono mt-1">{row.vehicle?.plateNumber}</p>
+                    <p className="text-[10px] text-slate-500 font-mono mt-1">{row.vehicle?.licensePlate}</p>
                 </div>
             )
         },
@@ -263,7 +278,7 @@ export default function TripDispatcher() {
             key: 'cargo',
             label: 'Cargo',
             render: (row) => {
-                const isNearLimit = row.cargoWeight >= (row.vehicle?.capacity * 0.8);
+                const isNearLimit = row.cargoWeight >= (row.vehicle?.maxLoadCapacity * 0.8);
                 return (
                     <span className={cn("text-xs font-bold", isNearLimit && "text-red-500")}>
                         {row.cargoWeight?.toLocaleString()} kg
@@ -307,6 +322,7 @@ export default function TripDispatcher() {
                                 className="h-7 text-[10px] font-bold bg-white"
                                 onClick={(e) => {
                                     e.stopPropagation();
+                                    setActiveTripId(row._id);
                                     fetchTrip(row._id);
                                     setStatusAction({ type: 'advance', target: next });
                                     setStatusFormData({ endOdometer: '', actualFuelCost: '', actualRevenue: row.estimatedRevenue || '', reason: '' });
@@ -322,6 +338,7 @@ export default function TripDispatcher() {
                             className="h-7 w-7 p-0 text-slate-400 hover:text-red-500"
                             onClick={(e) => {
                                 e.stopPropagation();
+                                setActiveTripId(row._id);
                                 fetchTrip(row._id);
                                 setStatusAction({ type: 'cancel', target: 'Cancelled' });
                                 setStatusFormData({ endOdometer: '', actualFuelCost: '', actualRevenue: '', reason: '' });
@@ -342,7 +359,7 @@ export default function TripDispatcher() {
                 title="Trip Dispatcher"
                 subtitle="Orchestrate deliveries, monitor in-transit status and handle fleet lifecycle."
                 actions={
-                    (can('dispatch_trips') || can('manager')) && (
+                    can('create_trips') && (
                         <Button onClick={handleOpenCreate} className="bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200 shadow-lg border-2 border-white dark:border-slate-900">
                             <Plus className="h-4 w-4 mr-2" />
                             Plan New Trip
@@ -423,9 +440,9 @@ export default function TripDispatcher() {
                                             {availableVehicles.map(v => (
                                                 <SelectItem key={v._id} value={v._id}>
                                                     <div className="flex items-center gap-3">
-                                                        <span className="font-bold">{v.plateNumber}</span>
+                                                        <span className="font-bold">{v.licensePlate}</span>
                                                         <Badge variant="outline" className="text-[9px] uppercase">{v.type}</Badge>
-                                                        <span className="text-xs text-slate-400">({v.capacity.toLocaleString()}kg)</span>
+                                                        <span className="text-xs text-slate-400">({(v.maxLoadCapacity || 0).toLocaleString()}kg)</span>
                                                     </div>
                                                 </SelectItem>
                                             ))}
@@ -441,11 +458,11 @@ export default function TripDispatcher() {
                                                 </div>
                                                 <div>
                                                     <p className="font-bold text-sm leading-tight">{selectedVehicleObj.name}</p>
-                                                    <p className="text-xs text-slate-500 font-mono">{selectedVehicleObj.plateNumber}</p>
+                                                    <p className="text-xs text-slate-500 font-mono">{selectedVehicleObj.licensePlate}</p>
                                                 </div>
                                                 <div className="ml-auto text-right">
                                                     <p className="text-[10px] font-bold text-slate-400 uppercase">Max Payload</p>
-                                                    <p className="font-bold text-blue-600">{selectedVehicleObj.capacity.toLocaleString()} kg</p>
+                                                    <p className="font-bold text-blue-600">{(selectedVehicleObj.maxLoadCapacity || 0).toLocaleString()} kg</p>
                                                 </div>
                                             </CardContent>
                                         </Card>
@@ -492,7 +509,7 @@ export default function TripDispatcher() {
                                                 </div>
                                                 <div className="ml-auto text-right">
                                                     <div className="flex items-center gap-2 mb-1 justify-end">
-                                                        <Badge variant="outline" className="text-[9px]">Exp: {formatDate(selectedDriverObj.licenseExpiry, 'MM/YY')}</Badge>
+                                                        <Badge variant="outline" className="text-[9px]">Exp: {formatDate(selectedDriverObj.licenseExpiry, 'MM/yy')}</Badge>
                                                     </div>
                                                     <p className="font-bold text-emerald-600">Safety {selectedDriverObj.safetyScore}%</p>
                                                 </div>
@@ -588,7 +605,7 @@ export default function TripDispatcher() {
                                     <div className="grid grid-cols-2 gap-6">
                                         <div className="space-y-1">
                                             <p className="text-[10px] text-slate-500 uppercase font-bold">Resource Pair</p>
-                                            <p className="text-sm font-bold truncate">{selectedVehicleObj.plateNumber} + {selectedDriverObj.name.split(' ')[0]}</p>
+                                            <p className="text-sm font-bold truncate">{selectedVehicleObj.licensePlate} + {selectedDriverObj.name.split(' ')[0]}</p>
                                         </div>
                                         <div className="space-y-1">
                                             <p className="text-[10px] text-slate-500 uppercase font-bold">Route</p>
@@ -710,7 +727,7 @@ export default function TripDispatcher() {
                                             </div>
                                             <div className="min-w-0">
                                                 <p className="text-sm font-bold truncate leading-tight">{selectedTrip.vehicle?.name}</p>
-                                                <p className="text-[10px] text-slate-500 font-mono">{selectedTrip.vehicle?.plateNumber}</p>
+                                                <p className="text-[10px] text-slate-500 font-mono">{selectedTrip.vehicle?.licensePlate}</p>
                                             </div>
                                         </CardContent>
                                     </Card>
@@ -780,7 +797,7 @@ export default function TripDispatcher() {
                                                     <p className={cn("text-xs font-bold", isLast ? "text-slate-900 dark:text-white" : "text-slate-400")}>
                                                         {item.status}
                                                     </p>
-                                                    <span className="text-[10px] text-slate-400">• {formatDate(item.timestamp, 'MMM dd, HH:mm')}</span>
+                                                    <span className="text-[10px] text-slate-400">• {formatDate(item.changedAt, 'MMM dd, HH:mm')}</span>
                                                 </div>
                                                 <p className="text-[10px] text-slate-500 mt-0.5 italic flex items-center gap-1">
                                                     <User className="h-2 w-2" />
@@ -797,7 +814,13 @@ export default function TripDispatcher() {
                     <div className="mt-8 flex justify-end gap-3">
                         <Button variant="outline" onClick={() => setIsDetailModalOpen(false)}>Close Panel</Button>
                         {(selectedTrip.status !== 'Completed' && selectedTrip.status !== 'Cancelled') && (
-                            <Button onClick={() => { setIsDetailModalOpen(false); setIsStatusModalOpen(true); setStatusAction({ type: 'advance', target: getNextStatus(selectedTrip.status) }); }}>
+                            <Button onClick={() => {
+                                setActiveTripId(selectedTrip._id);
+                                setIsDetailModalOpen(false);
+                                setStatusAction({ type: 'advance', target: getNextStatus(selectedTrip.status) });
+                                setStatusFormData({ endOdometer: '', actualFuelCost: '', actualRevenue: selectedTrip.estimatedRevenue || selectedTrip.revenue || '', reason: '' });
+                                setIsStatusModalOpen(true);
+                            }}>
                                 Manage Status
                             </Button>
                         )}

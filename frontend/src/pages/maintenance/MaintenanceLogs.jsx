@@ -72,15 +72,18 @@ export default function MaintenanceLogs() {
         cost: '',
         date: format(new Date(), 'yyyy-MM-dd'),
         odometerAtService: '',
-        technician: ''
+        technicianName: ''
     });
 
     const fetchLogs = React.useCallback(async () => {
         setIsLoading(true);
         try {
-            const response = await maintenanceAPI.getAll({ ...filters, ...pagination });
-            setLogs(response.data.logs);
-            setTotal(response.data.total);
+            const params = { page: pagination.page, limit: pagination.limit };
+            if (filters.status) params.status = filters.status;
+            if (filters.vehicleId) params.vehicle = filters.vehicleId;
+            const response = await maintenanceAPI.getAll(params);
+            setLogs(response.data.logs || []);
+            setTotal(response.data.total || 0);
         } catch (err) {
             error('Failed to fetch maintenance logs');
         } finally {
@@ -106,9 +109,9 @@ export default function MaintenanceLogs() {
 
     const handleLogSubmit = async () => {
         try {
-            await maintenanceAPI.create(logFormData);
+            await maintenanceAPI.create({ ...logFormData, vehicle: logFormData.vehicleId });
             const vehicle = vehicles.find(v => v._id === logFormData.vehicleId);
-            success(`Maintenance logged. ${vehicle?.plateNumber} moved to In Shop.`);
+            success(`Maintenance logged. ${vehicle?.licensePlate} moved to In Shop.`);
             setIsLogModalOpen(false);
             setIsConfirmInShopOpen(false);
             fetchLogs();
@@ -143,7 +146,7 @@ export default function MaintenanceLogs() {
                         </div>
                         <div>
                             <p className="text-sm font-bold">{row.vehicle?.name}</p>
-                            <p className="text-[10px] text-slate-500 font-mono uppercase">{row.vehicle?.plateNumber}</p>
+                            <p className="text-[10px] text-slate-500 font-mono uppercase">{row.vehicle?.licensePlate}</p>
                         </div>
                     </div>
                 );
@@ -179,7 +182,7 @@ export default function MaintenanceLogs() {
             render: (row) => (
                 <div className="flex items-center gap-2 text-xs font-medium">
                     <User className="h-3 w-3 text-slate-400" />
-                    {row.technician}
+                    {row.technicianName || '—'}
                 </div>
             )
         },
@@ -270,21 +273,21 @@ export default function MaintenanceLogs() {
             {/* Filter Bar */}
             <div className="flex gap-4 p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
                 <div className="flex-1 flex gap-4">
-                    <Select value={filters.status} onValueChange={(v) => setFilters(f => ({ ...f, status: v }))}>
+                    <Select value={filters.status || 'all'} onValueChange={(v) => setFilters(f => ({ ...f, status: v === 'all' ? '' : v }))}>
                         <SelectTrigger className="w-[200px]"><SelectValue placeholder="All Status" /></SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="">All Status</SelectItem>
+                            <SelectItem value="all">All Status</SelectItem>
                             <SelectItem value="In Progress">In Progress</SelectItem>
                             <SelectItem value="Completed">Completed</SelectItem>
                         </SelectContent>
                     </Select>
 
-                    <Select value={filters.vehicleId} onValueChange={(v) => setFilters(f => ({ ...f, vehicleId: v }))}>
+                    <Select value={filters.vehicleId || 'all'} onValueChange={(v) => setFilters(f => ({ ...f, vehicleId: v === 'all' ? '' : v }))}>
                         <SelectTrigger className="w-[250px]"><SelectValue placeholder="All Vehicles" /></SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="">All Vehicles</SelectItem>
+                            <SelectItem value="all">All Vehicles</SelectItem>
                             {vehicles.map(v => (
-                                <SelectItem key={v._id} value={v._id}>{v.plateNumber} — {v.name}</SelectItem>
+                                <SelectItem key={v._id} value={v._id}>{v.licensePlate} — {v.name}</SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
@@ -329,7 +332,7 @@ export default function MaintenanceLogs() {
                                     {vehicles.filter(v => v.status !== 'On Trip' && v.status !== 'Retired').map(v => (
                                         <SelectItem key={v._id} value={v._id}>
                                             <div className="flex items-center gap-3">
-                                                <span className="font-bold">{v.plateNumber}</span>
+                                                <span className="font-bold">{v.licensePlate}</span>
                                                 <Badge variant="outline" className="text-[9px]">{v.status}</Badge>
                                             </div>
                                         </SelectItem>
@@ -352,7 +355,7 @@ export default function MaintenanceLogs() {
                                 <Select onValueChange={(val) => setLogFormData(p => ({ ...p, serviceType: val }))}>
                                     <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
                                     <SelectContent>
-                                        {['Oil Change', 'Tire Rotation', 'Engine Repair', 'Brake Service', 'General Checkup', 'Body Work', 'Other'].map(t => (
+                                        {['Oil Change', 'Tire Replacement', 'Engine Repair', 'Brake Service', 'Electrical', 'Body Work', 'Other'].map(t => (
                                             <SelectItem key={t} value={t}>{t}</SelectItem>
                                         ))}
                                     </SelectContent>
@@ -377,7 +380,7 @@ export default function MaintenanceLogs() {
 
                         <div className="space-y-2">
                             <Label>Technician / Garage Name</Label>
-                            <Input placeholder="Enter name..." value={logFormData.technician} onChange={(e) => setLogFormData(p => ({ ...p, technician: e.target.value }))} />
+                            <Input placeholder="Enter name..." value={logFormData.technicianName} onChange={(e) => setLogFormData(p => ({ ...p, technicianName: e.target.value }))} />
                         </div>
 
                         <div className="space-y-2">
@@ -403,7 +406,7 @@ export default function MaintenanceLogs() {
                     isOpen={isResolveModalOpen}
                     onClose={() => setIsResolveModalOpen(false)}
                     title="Resolve Maintenance"
-                    message={`Are you sure the service for ${selectedLog.vehicle?.plateNumber} is complete?`}
+                    message={`Are you sure the service for ${selectedLog.vehicle?.licensePlate} is complete?`}
                     onConfirm={handleResolve}
                 >
                     <div className="mt-4 p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-xl flex gap-3">

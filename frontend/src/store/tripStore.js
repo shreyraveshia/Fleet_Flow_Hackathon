@@ -36,7 +36,8 @@ export const useTripStore = create((set, get) => ({
             ]);
             set({
                 selectedTrip: tripRes.data,
-                tripTimeline: timelineRes.data,
+                // API returns { data: { timeline: [...], tripId, ... } }
+                tripTimeline: timelineRes.data?.timeline || timelineRes.data || [],
                 isLoading: false
             });
         } catch (error) {
@@ -69,7 +70,7 @@ export const useTripStore = create((set, get) => ({
             // Refresh timeline if it's the selected trip
             if (get().selectedTrip?._id === id) {
                 const timelineRes = await tripAPI.getTimeline(id);
-                set({ tripTimeline: timelineRes.data });
+                set({ tripTimeline: timelineRes.data?.timeline || timelineRes.data || [] });
             }
             return response.data;
         } catch (error) {

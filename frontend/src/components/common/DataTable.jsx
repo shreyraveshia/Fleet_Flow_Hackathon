@@ -149,7 +149,7 @@ export default function DataTable({
                                 </TableRow>
                             ) : (
                                 /* Data Rows */
-                                sortedData.map((row) => (
+                                sortedData.map((row, rowIndex) => (
                                     <TableRow
                                         key={row._id || row.id}
                                         className={cn(onRowClick && "cursor-pointer")}
@@ -157,7 +157,7 @@ export default function DataTable({
                                     >
                                         {columns.map((col) => (
                                             <TableCell key={col.key} className="py-4">
-                                                {col.render ? col.render(row) : (row[col.key] ?? '-')}
+                                                {col.render ? col.render(row, col, rowIndex) : (row[col.key] ?? '-')}
                                             </TableCell>
                                         ))}
                                     </TableRow>
