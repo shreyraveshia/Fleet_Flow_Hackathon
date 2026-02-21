@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- SEO Meta Tags -->
+    <title>FleetFlow — Fleet & Logistics Management</title>
+    <meta name="description" content="FleetFlow — Intelligent fleet management system for tracking vehicles, drivers, trips, maintenance, and expenses in real-time." />
+    <meta name="keywords" content="fleet management, logistics, vehicle tracking, driver management, trip management, maintenance, expenses, FleetFlow" />
+    <meta name="author" content="FleetFlow" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="FleetFlow — Fleet & Logistics Management" />
+    <meta property="og:description" content="Real-time fleet management system for tracking vehicles, drivers, trips, and expenses." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://fleetflow.app" />
+
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#2563eb" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+
+    <!-- Prevent FOUC: set dark mode class before React loads -->
+    <script>
+      if (
+        localStorage.getItem('fleetflow-theme') === 'dark' ||
+        (!localStorage.getItem('fleetflow-theme') &&
+          window.matchMedia('(prefers-color-scheme: dark)').matches)
+      ) {
+        document.documentElement.classList.add('dark');
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
