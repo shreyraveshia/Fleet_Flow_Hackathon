@@ -1,8 +1,8 @@
 export const ROLES = {
-  ADMIN: 'admin',
-  MANAGER: 'manager',
-  DRIVER: 'driver',
-  VIEWER: 'viewer',
+  FLEET_MANAGER: 'fleet_manager',
+  DISPATCHER: 'dispatcher',
+  SAFETY_OFFICER: 'safety_officer',
+  FINANCIAL: 'financial',
 };
 
 export const VEHICLE_STATUS = {
