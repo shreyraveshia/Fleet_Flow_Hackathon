@@ -23,6 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/ca
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import SkeletonLoader from '../../components/common/SkeletonLoader';
+import { cn, formatDate } from '../../lib/utils';
 import { format } from 'date-fns';
 
 export default function ManagerDashboard() {
@@ -89,14 +90,14 @@ export default function ManagerDashboard() {
             )
         },
         { key: 'status', label: 'Status', render: (row) => <StatusPill status={row.status} size="xs" /> },
-        { key: 'createdAt', label: 'Created', render: (row) => format(new Date(row.createdAt), 'MMM dd, HH:mm') },
+        { key: 'createdAt', label: 'Created', render: (row) => formatDate(row.createdAt, 'MMM dd, HH:mm') },
     ];
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             <PageHeader
                 title="Manager Dashboard"
-                subtitle={`Welcome back! Here's what's happening in your fleet today, ${format(new Date(), 'MMMM dd, yyyy')}.`}
+                subtitle={`Welcome back! Here's what's happening in your fleet today, ${formatDate(new Date(), 'MMMM dd, yyyy')}.`}
                 actions={
                     <div className="flex gap-3">
                         <Button variant="outline" size="sm" onClick={fetchDashboard} disabled={isLoading}>
@@ -187,17 +188,17 @@ export default function ManagerDashboard() {
                                     {expiryAlerts.map((driver) => (
                                         <div key={driver._id} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 transition-all hover:shadow-md">
                                             <div className="min-w-0">
-                                                <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{driver.name}</p>
-                                                <p className="text-[10px] text-slate-500 font-mono mt-0.5">#{driver.licenseNumber}</p>
+                                                <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{driver?.name}</p>
+                                                <p className="text-[10px] text-slate-500 font-mono mt-0.5">#{driver?.licenseNumber}</p>
                                             </div>
                                             <div className="text-right shrink-0">
                                                 <Badge
-                                                    variant={driver.daysRemaining <= 7 ? "destructive" : "warning"}
+                                                    variant={driver?.daysRemaining <= 7 ? "destructive" : "warning"}
                                                     className="text-[10px] font-bold h-5 px-1.5"
                                                 >
-                                                    {driver.daysRemaining} days left
+                                                    {driver?.daysRemaining || 0} days left
                                                 </Badge>
-                                                <p className="text-[10px] text-slate-400 mt-1">{format(new Date(driver.licenseExpiry), 'MMM dd')}</p>
+                                                <p className="text-[10px] text-slate-400 mt-1">{formatDate(driver?.licenseExpiry, 'MMM dd')}</p>
                                             </div>
                                         </div>
                                     ))}

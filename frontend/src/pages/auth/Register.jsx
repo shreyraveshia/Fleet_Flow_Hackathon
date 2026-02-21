@@ -85,7 +85,7 @@ export default function Register() {
         const { confirmPassword, ...registerData } = formData;
         const res = await register(registerData);
 
-        if (res.success) {
+        if (res?.success) {
             toastSuccess('Account created successfully!');
             navigate('/dashboard');
         }

@@ -12,6 +12,7 @@ import {
     RefreshCw,
     PieChart
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { analyticsAPI } from '../../api/analytics.api';
 import { expenseAPI } from '../../api/expense.api';
 import { exportAPI } from '../../api/export.api';
@@ -29,6 +30,7 @@ import { cn } from '../../lib/utils';
 import { format } from 'date-fns';
 
 export default function FinancialDashboard() {
+    const navigate = useNavigate();
     const [data, setData] = React.useState(null);
     const [isLoading, setIsLoading] = React.useState(true);
     const { downloadPDF, downloadCSV, isDownloading } = useDownload();
@@ -61,10 +63,10 @@ export default function FinancialDashboard() {
     };
 
     const vehicleColumns = [
-        { key: 'plate', label: 'Vehicle', render: (row) => <span className="font-bold">{row.plateNumber}</span> },
-        { key: 'totalCost', label: 'Total Op. Cost', render: (row) => <span className="font-semibold text-red-600 dark:text-red-400">₹{row.totalCost.toLocaleString()}</span> },
-        { key: 'revenue', label: 'Revenue', render: (row) => <span className="font-semibold text-emerald-600 dark:text-emerald-400">₹{row.revenue.toLocaleString()}</span> },
-        { key: 'utilization', label: 'Usage', render: (row) => <span className="text-xs text-slate-500">{row.utilization}%</span> },
+        { key: 'plate', label: 'Vehicle', render: (row) => <span className="font-bold">{row?.plateNumber}</span> },
+        { key: 'totalCost', label: 'Total Op. Cost', render: (row) => <span className="font-semibold text-red-600 dark:text-red-400">₹{row?.totalOperationalCost?.toLocaleString() || '0'}</span> },
+        { key: 'revenue', label: 'Revenue', render: (row) => <span className="font-semibold text-emerald-600 dark:text-emerald-400">₹{row?.revenue?.toLocaleString() || '0'}</span> },
+        { key: 'utilization', label: 'Usage', render: (row) => <span className="text-xs text-slate-500">{row?.utilization || 0}%</span> },
     ];
 
     return (
@@ -99,16 +101,16 @@ export default function FinancialDashboard() {
 
             {/* KPI Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <KPICard title="Fuel Expenses" value={stats.kpis.fuelCost.toLocaleString()} suffix="₹" icon={Wallet} color="red" isLoading={isLoading} />
-                <KPICard title="Maintenance" value={stats.kpis.maintCost.toLocaleString()} suffix="₹" icon={CreditCard} color="amber" isLoading={isLoading} />
-                <KPICard title="Operational Revenue" value={stats.kpis.revenue.toLocaleString()} suffix="₹" icon={TrendingUp} color="green" isLoading={isLoading} />
+                <KPICard title="Fuel Expenses" value={stats?.kpis?.fuelCost?.toLocaleString() || '0'} suffix="₹" icon={Wallet} color="red" isLoading={isLoading} />
+                <KPICard title="Maintenance" value={stats?.kpis?.maintCost?.toLocaleString() || '0'} suffix="₹" icon={CreditCard} color="amber" isLoading={isLoading} />
+                <KPICard title="Operational Revenue" value={stats?.kpis?.revenue?.toLocaleString() || '0'} suffix="₹" icon={TrendingUp} color="green" isLoading={isLoading} />
                 <KPICard
                     title="Net Profit"
-                    value={stats.kpis.profit.toLocaleString()}
+                    value={stats?.kpis?.profit?.toLocaleString() || '0'}
                     suffix="₹"
-                    trend={stats.kpis.trend}
+                    trend={stats?.kpis?.trend}
                     icon={Receipt}
-                    color={stats.kpis.profit > 0 ? "blue" : "red"}
+                    color={(stats?.kpis?.profit || 0) > 0 ? "blue" : "red"}
                     isLoading={isLoading}
                 />
             </div>

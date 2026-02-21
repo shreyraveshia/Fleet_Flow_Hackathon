@@ -11,6 +11,7 @@ import {
     ChevronDown
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
+import { useUIStore } from '../../store/uiStore';
 import { useRBAC } from '../../hooks/useRBAC';
 import NotificationBell from './NotificationBell';
 import {

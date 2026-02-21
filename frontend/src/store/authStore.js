@@ -26,7 +26,7 @@ export const useAuthStore = create(
                         isAuthenticated: true,
                         isLoading: false
                     });
-                    return user;
+                    return response;
                 } catch (error) {
                     set({
                         error: error.message || 'Login failed',
@@ -71,7 +71,7 @@ export const useAuthStore = create(
                         isAuthenticated: true,
                         isLoading: false
                     });
-                    return user;
+                    return response;
                 } catch (error) {
                     set({
                         error: error.message || 'Registration failed',

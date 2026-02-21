@@ -15,8 +15,10 @@ import {
     IndianRupee,
     MoreVertical,
     ChevronRight,
-    ChevronDown
+    ChevronDown,
+    LayoutDashboard
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { analyticsAPI } from '../../api/analytics.api';
 import { exportAPI } from '../../api/export.api';
 import { useDownload } from '../../hooks/useDownload';
@@ -29,6 +31,8 @@ import KPICard from '../../components/common/KPICard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
+import { Badge } from '../../components/ui/badge';
+import { Separator } from '../../components/ui/separator';
 import { Progress } from '../../components/ui/progress';
 import {
     DropdownMenu,
@@ -36,16 +40,15 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '../../components/ui/dropdown-menu';
-import {
-    FuelEfficiencyChart,
-    CostTrendChart,
-    ROIChart,
-    DriverScoreChart
-} from '../../components/common/Charts';
-import { cn } from '../../lib/utils';
+import FuelEfficiencyChart from '../../components/charts/FuelEfficiencyChart';
+import CostTrendChart from '../../components/charts/CostTrendChart';
+import ROIChart from '../../components/charts/ROIChart';
+import DriverScoreChart from '../../components/charts/DriverScoreChart';
+import { cn, formatDate } from '../../lib/utils';
 import { format } from 'date-fns';
 
 export default function Analytics() {
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = React.useState('overview');
     const [data, setData] = React.useState({
         overview: null,
@@ -96,15 +99,15 @@ export default function Analytics() {
     ];
 
     const roiColumns = [
-        { key: 'vehicle', label: 'Vehicle', render: (row) => <span className="font-bold text-xs uppercase">{row.vehicle?.plateNumber}</span> },
-        { key: 'revenue', label: 'Total Revenue', render: (row) => <span className="text-emerald-600 font-bold">₹{row.revenue?.toLocaleString()}</span> },
-        { key: 'costs', label: 'Total Ops Cost', render: (row) => <span className="text-red-500 font-medium">₹{(row.fuelCost + row.maintenanceCost || 0).toLocaleString()}</span> },
-        { key: 'net', label: 'Net Profit', render: (row) => <span className={cn("font-black", row.netProfit > 0 ? "text-emerald-600" : "text-red-600")}>₹{row.netProfit?.toLocaleString()}</span> },
-        { key: 'roi', label: 'ROI %', render: (row) => <Badge className={cn(row.roi > 0 ? "bg-emerald-500" : "bg-red-500")}>{row.roi?.toFixed(1)}%</Badge> },
+        { key: 'vehicle', label: 'Vehicle', render: (row) => <span className="font-bold text-xs uppercase">{row?.licensePlate}</span> },
+        { key: 'revenue', label: 'Total Revenue', render: (row) => <span className="text-emerald-600 font-bold">₹{row?.revenue?.toLocaleString() || '0'}</span> },
+        { key: 'costs', label: 'Total Ops Cost', render: (row) => <span className="text-red-500 font-medium">₹{row?.totalOperationalCost?.toLocaleString() || '0'}</span> },
+        { key: 'net', label: 'Net Profit', render: (row) => <span className={cn("font-black", (row?.netProfit || 0) > 0 ? "text-emerald-600" : "text-red-600")}>₹{row?.netProfit?.toLocaleString() || '0'}</span> },
+        { key: 'roi', label: 'ROI %', render: (row) => <Badge className={cn((row?.roi || 0) > 0 ? "bg-emerald-500" : "bg-red-500")}>{(row?.roi || 0).toFixed(1)}%</Badge> },
     ];
 
     const trendColumns = [
-        { key: 'month', label: 'Period', render: (row) => <span className="font-bold text-xs">{format(new Date(row.month), 'MMMM yyyy')}</span> },
+        { key: 'month', label: 'Period', render: (row) => <span className="font-bold text-xs">{row.monthName} {row.year}</span> },
         { key: 'revenue', label: 'Revenue', render: (row) => <span className="text-emerald-600 font-bold">₹{row.revenue?.toLocaleString()}</span> },
         { key: 'fuel', label: 'Fuel', render: (row) => <span className="text-xs">₹{row.fuelCost?.toLocaleString()}</span> },
         { key: 'maintenance', label: 'Mnt.', render: (row) => <span className="text-xs">₹{row.maintenanceCost?.toLocaleString()}</span> },
@@ -166,19 +169,19 @@ export default function Analytics() {
                     {loading ? <SkeletonLoader type="page" /> : (
                         <>
                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-                                <KPICard title="Active Fleet" value={data.overview?.kpis.activeCount} icon={Truck} color="blue" />
-                                <KPICard title="Mnt. Alerts" value={data.overview?.kpis.maintenanceCount} icon={AlertTriangle} color="amber" />
-                                <KPICard title="Utilization" value={data.overview?.kpis.utilization} suffix="%" icon={Activity} color="emerald" />
-                                <KPICard title="Total Assets" value={data.overview?.kpis.totalVehicles} icon={Package} color="slate" />
-                                <KPICard title="Available" value={data.overview?.kpis.availableDrivers} icon={Users} color="indigo" />
-                                <KPICard title="Pending" value={data.overview?.kpis.pendingTrips} icon={Clock} color="orange" />
+                                <KPICard title="Active Fleet" value={data.overview?.kpis?.activeCount || 0} icon={Truck} color="blue" />
+                                <KPICard title="Mnt. Alerts" value={data.overview?.kpis?.maintenanceCount || 0} icon={AlertTriangle} color="amber" />
+                                <KPICard title="Utilization" value={data.overview?.kpis?.utilization || 0} suffix="%" icon={Activity} color="emerald" />
+                                <KPICard title="Total Assets" value={data.overview?.kpis?.totalVehicles || 0} icon={Package} color="slate" />
+                                <KPICard title="Available" value={data.overview?.kpis?.availableDrivers || 0} icon={Users} color="indigo" />
+                                <KPICard title="Pending" value={data.overview?.kpis?.pendingTrips || 0} icon={Clock} color="orange" />
                             </div>
 
                             <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                                <Card className="border-none shadow-sm"><CardContent className="p-6"><h4 className="text-xs font-black uppercase mb-4 text-slate-400">Monthly Revenue Trend</h4><CostTrendChart data={data.overview?.charts.trends} compact /></CardContent></Card>
-                                <Card className="border-none shadow-sm"><CardContent className="p-6"><h4 className="text-xs font-black uppercase mb-4 text-slate-400">Driver Performance Score</h4><DriverScoreChart data={data.overview?.charts.drivers} compact /></CardContent></Card>
-                                <Card className="border-none shadow-sm"><CardContent className="p-6"><h4 className="text-xs font-black uppercase mb-4 text-slate-400">Fuel Economy km/L</h4><FuelEfficiencyChart data={data.overview?.charts.fuel} compact /></CardContent></Card>
-                                <Card className="border-none shadow-sm"><CardContent className="p-6"><h4 className="text-xs font-black uppercase mb-4 text-slate-400">Vehicle Net Impact</h4><ROIChart data={data.overview?.charts.roi} compact /></CardContent></Card>
+                                <Card className="border-none shadow-sm"><CardContent className="p-6"><h4 className="text-xs font-black uppercase mb-4 text-slate-400">Monthly Revenue Trend</h4><CostTrendChart data={data.overview?.monthlySummary} compact /></CardContent></Card>
+                                <Card className="border-none shadow-sm"><CardContent className="p-6"><h4 className="text-xs font-black uppercase mb-4 text-slate-400">Driver Performance Score</h4><DriverScoreChart data={data.overview?.kpis?.leaderboard} compact /></CardContent></Card>
+                                <Card className="border-none shadow-sm"><CardContent className="p-6"><h4 className="text-xs font-black uppercase mb-4 text-slate-400">Fuel Economy km/L</h4><FuelEfficiencyChart data={data.overview?.fuelEfficiency} compact /></CardContent></Card>
+                                <Card className="border-none shadow-sm"><CardContent className="p-6"><h4 className="text-xs font-black uppercase mb-4 text-slate-400">Vehicle Net Impact</h4><ROIChart data={data.overview?.roiData} compact /></CardContent></Card>
                             </div>
                         </>
                     )}

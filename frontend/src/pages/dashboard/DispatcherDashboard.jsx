@@ -93,7 +93,8 @@ export default function DispatcherDashboard() {
     if (isLoading && !data) return <SkeletonLoader type="page" />;
 
     const kpis = data?.kpis || {};
-    const activeTrips = data?.recentTrips?.filter(t => ['Dispatched', 'In Transit'].includes(t.status)) || [];
+    const recentTrips = data?.recentTrips || [];
+    const activeTrips = recentTrips.filter(t => ['Dispatched', 'In Transit'].includes(t.status));
 
     const tripColumns = [
         { key: 'tripId', label: 'Trip ID', render: (row) => <span className="font-bold">#{row.tripId}</span> },
@@ -138,7 +139,7 @@ export default function DispatcherDashboard() {
                 <KPICard title="Vehicle Availability" value={availableData.vehicles.length} icon={Truck} color="emerald" isLoading={isLoading} />
                 <KPICard title="Driver Pool" value={availableData.drivers.length} icon={Users} color="blue" isLoading={isLoading} />
                 <KPICard title="Active Trips" value={activeTrips.length} icon={MapPin} color="indigo" isLoading={isLoading} />
-                <KPICard title="Pending Drafts" value={data?.recentTrips?.filter(t => t.status === 'Draft').length || 0} icon={Package} color="amber" isLoading={isLoading} />
+                <KPICard title="Pending Drafts" value={recentTrips.filter(t => t.status === 'Draft').length} icon={Package} color="amber" isLoading={isLoading} />
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">

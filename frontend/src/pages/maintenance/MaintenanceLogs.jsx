@@ -46,7 +46,7 @@ import {
 } from '../../components/ui/dropdown-menu';
 import { Card, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
-import { cn } from '../../lib/utils';
+import { cn, formatDate } from '../../lib/utils';
 import { format } from 'date-fns';
 
 export default function MaintenanceLogs() {
@@ -171,7 +171,7 @@ export default function MaintenanceLogs() {
         {
             key: 'date',
             label: 'Date',
-            render: (row) => <span className="text-xs font-medium text-slate-500">{format(new Date(row.date), 'MMM dd, yyyy')}</span>
+            render: (row) => <span className="text-xs font-medium text-slate-500">{formatDate(row.date, 'MMM dd, yyyy')}</span>
         },
         {
             key: 'technician',

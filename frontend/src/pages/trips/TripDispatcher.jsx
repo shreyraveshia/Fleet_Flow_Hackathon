@@ -57,8 +57,8 @@ import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { Card, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Separator } from '../../components/ui/separator';
-import { cn } from '../../lib/utils';
-import { format, formatDistanceToNow } from 'date-fns';
+import { cn, formatDate, formatDistanceToNow } from '../../lib/utils';
+import { format, addDays } from 'date-fns';
 
 export default function TripDispatcher() {
     const {
@@ -274,7 +274,7 @@ export default function TripDispatcher() {
         {
             key: 'createdAt',
             label: 'Created',
-            render: (row) => <span className="text-[10px] text-slate-500 font-medium">{formatDistanceToNow(new Date(row.createdAt))} ago</span>
+            render: (row) => <span className="text-[10px] text-slate-500 font-medium">{formatDistanceToNow(row.createdAt)}</span>
         },
         {
             key: 'actions',
@@ -482,7 +482,7 @@ export default function TripDispatcher() {
                                                 </div>
                                                 <div className="ml-auto text-right">
                                                     <div className="flex items-center gap-2 mb-1 justify-end">
-                                                        <Badge variant="outline" className="text-[9px]">Exp: {format(new Date(selectedDriverObj.licenseExpiry), 'MM/YY')}</Badge>
+                                                        <Badge variant="outline" className="text-[9px]">Exp: {formatDate(selectedDriverObj.licenseExpiry, 'MM/YY')}</Badge>
                                                     </div>
                                                     <p className="font-bold text-emerald-600">Safety {selectedDriverObj.safetyScore}%</p>
                                                 </div>
@@ -770,7 +770,7 @@ export default function TripDispatcher() {
                                                     <p className={cn("text-xs font-bold", isLast ? "text-slate-900 dark:text-white" : "text-slate-400")}>
                                                         {item.status}
                                                     </p>
-                                                    <span className="text-[10px] text-slate-400">• {format(new Date(item.timestamp), 'MMM dd, HH:mm')}</span>
+                                                    <span className="text-[10px] text-slate-400">• {formatDate(item.timestamp, 'MMM dd, HH:mm')}</span>
                                                 </div>
                                                 <p className="text-[10px] text-slate-500 mt-0.5 italic flex items-center gap-1">
                                                     <User className="h-2 w-2" />

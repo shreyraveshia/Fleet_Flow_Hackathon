@@ -2,8 +2,8 @@ import * as React from 'react';
 import { X, History, User, Calendar, Activity, Database } from 'lucide-react';
 import { auditAPI } from '../../api/audit.api';
 import { useRBAC } from '../../hooks/useRBAC';
-import { formatDistanceToNow, format } from 'date-fns';
-import { cn } from '../../lib/utils';
+import { cn, formatDate, formatDistanceToNow } from '../../lib/utils';
+import { formatDistanceToNow as dfFormatDistanceToNow, format as dfFormat } from 'date-fns';
 import { Badge } from '../ui/badge';
 import { Skeleton } from '../ui/skeleton';
 
@@ -123,7 +123,7 @@ export default function AuditLogDrawer({ isOpen, onClose }) {
                                                 {log.action.replace(/_/g, ' ')}
                                             </Badge>
                                             <span className="text-[11px] text-slate-400 font-medium">
-                                                {formatDistanceToNow(new Date(log.createdAt), { addSuffix: true })}
+                                                {formatDistanceToNow(log.createdAt)}
                                             </span>
                                         </div>
 
@@ -138,7 +138,7 @@ export default function AuditLogDrawer({ isOpen, onClose }) {
                                             </div>
                                             <div className="flex items-center gap-1.5 text-[11px] text-slate-400 dark:text-slate-500">
                                                 <Calendar className="h-3 w-3" />
-                                                <span>{format(new Date(log.createdAt), 'MMM dd, yyyy • hh:mm a')}</span>
+                                                <span>{formatDate(log.createdAt, 'MMM dd, yyyy • hh:mm a')}</span>
                                             </div>
                                         </div>
 

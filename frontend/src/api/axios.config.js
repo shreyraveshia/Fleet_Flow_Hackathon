@@ -34,8 +34,21 @@ api.interceptors.response.use(
             }
         }
 
+        let message = 'Something went wrong';
+
+        if (error.response) {
+            // Server responded with an error
+            message = error.response.data?.message || error.response.statusText || 'Server Error';
+        } else if (error.request) {
+            // Request made but no response received
+            message = 'No response from server. Please check your connection.';
+        } else {
+            // Something else happened
+            message = error.message;
+        }
+
         const errorData = {
-            message: error.response?.data?.message || 'Something went wrong',
+            message,
             errors: error.response?.data?.errors || null,
             statusCode: error.response?.status || 500,
         };

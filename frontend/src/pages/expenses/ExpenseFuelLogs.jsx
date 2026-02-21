@@ -47,7 +47,7 @@ import {
 import { Card, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Separator } from '../../components/ui/separator';
-import { cn } from '../../lib/utils';
+import { cn, formatDate } from '../../lib/utils';
 import { format } from 'date-fns';
 
 export default function ExpenseFuelLogs() {
@@ -136,7 +136,7 @@ export default function ExpenseFuelLogs() {
     };
 
     const columns = [
-        { key: 'date', label: 'Date', render: (row) => <span className="text-xs font-semibold">{format(new Date(row.date), 'MMM dd, yyyy')}</span> },
+        { key: 'date', label: 'Date', render: (row) => <span className="text-xs font-semibold">{formatDate(row.date, 'MMM dd, yyyy')}</span> },
         {
             key: 'vehicle',
             label: 'Vehicle',

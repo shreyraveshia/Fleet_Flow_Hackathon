@@ -25,6 +25,7 @@ import {
 import { useVehicleStore } from '../../store/vehicleStore';
 import { useRBAC } from '../../hooks/useRBAC';
 import { useToast } from '../../hooks/useToast';
+import { useSocket } from '../../hooks/useSocket';
 import PageHeader from '../../components/layout/PageHeader';
 import DataTable from '../../components/common/DataTable';
 import StatusPill from '../../components/common/StatusPill';
@@ -50,6 +51,7 @@ import {
 } from '../../components/ui/dropdown-menu';
 import { Badge } from '../../components/ui/badge';
 import { cn } from '../../lib/utils';
+import { format } from 'date-fns';
 
 export default function VehicleRegistry() {
     const {
@@ -67,6 +69,7 @@ export default function VehicleRegistry() {
 
     const { can } = useRBAC();
     const { success, error, info } = useToast();
+    const { on, off } = useSocket();
     const navigate = useNavigate();
 
     // Modal States
@@ -84,6 +87,15 @@ export default function VehicleRegistry() {
     React.useEffect(() => {
         fetchVehicles(pagination);
     }, [fetchVehicles, filters, pagination]);
+
+    React.useEffect(() => {
+        const handleUpdate = () => {
+            fetchVehicles(pagination);
+        };
+
+        on('fleet_update', handleUpdate);
+        return () => off('fleet_update', handleUpdate);
+    }, [on, off, fetchVehicles, pagination]);
 
     const handleCopyPlate = (plate) => {
         navigator.clipboard.writeText(plate);

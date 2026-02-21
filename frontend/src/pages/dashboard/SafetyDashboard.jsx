@@ -25,6 +25,7 @@ import { Progress } from '../../components/ui/progress';
 import { Badge } from '../../components/ui/badge';
 import SkeletonLoader from '../../components/common/SkeletonLoader';
 import { format, formatDistanceToNow } from 'date-fns';
+import { cn, formatDate } from '../../lib/utils';
 
 export default function SafetyDashboard() {
     const [data, setData] = React.useState(null);
@@ -105,10 +106,10 @@ export default function SafetyDashboard() {
 
             {/* KPI Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <KPICard title="License Expiries" value={stats.kpis.expiring} icon={FileWarning} color="amber" isLoading={isLoading} />
-                <KPICard title="Expired Licenses" value={stats.kpis.expired} icon={AlertCircle} color="red" isLoading={isLoading} />
-                <KPICard title="Suspended Drivers" value={stats.kpis.suspended} icon={Users} color="slate" isLoading={isLoading} />
-                <KPICard title="Avg Fleet Score" value={stats.kpis.avgScore} suffix="%" icon={Trophy} color="green" isLoading={isLoading} />
+                <KPICard title="License Expiries" value={stats?.kpis?.expiring || 0} icon={FileWarning} color="amber" isLoading={isLoading} />
+                <KPICard title="Expired Licenses" value={stats?.kpis?.expired || 0} icon={AlertCircle} color="red" isLoading={isLoading} />
+                <KPICard title="Suspended Drivers" value={stats?.kpis?.suspended || 0} icon={Users} color="slate" isLoading={isLoading} />
+                <KPICard title="Avg Fleet Score" value={stats?.kpis?.avgScore || 0} suffix="%" icon={Trophy} color="green" isLoading={isLoading} />
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
@@ -168,7 +169,7 @@ export default function SafetyDashboard() {
                                             </p>
                                             <div className="flex items-center justify-between">
                                                 <span className="text-[10px] font-mono text-slate-400 underline decoration-slate-200">
-                                                    Expires: {format(new Date(alert.expiryDate), 'MMM dd, yyyy')}
+                                                    Expires: {formatDate(alert.expiryDate, 'MMM dd, yyyy')}
                                                 </span>
                                                 <Button size="xs" variant="outline" className="h-6 text-[10px] px-2 font-bold">
                                                     Notify Driver

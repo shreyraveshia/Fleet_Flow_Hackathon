@@ -56,7 +56,7 @@ export default function Login() {
         }
 
         const res = await login(formData.email, formData.password);
-        if (res.success) {
+        if (res?.success) {
             toastSuccess('Welcome back to FleetFlow!');
             navigate('/dashboard');
         }
@@ -65,13 +65,16 @@ export default function Login() {
     const handleQuickLogin = (email) => {
         setFormData({ email, password: 'password123' });
         // Trigger login slightly after to show the auto-fill effect
-        setTimeout(() => {
-            login(email, 'password123').then(res => {
-                if (res.success) {
+        setTimeout(async () => {
+            try {
+                const res = await login(email, 'password123');
+                if (res?.success) {
                     toastSuccess('Authenticated via Quick Login');
                     navigate('/dashboard');
                 }
-            });
+            } catch (err) {
+                // Error handled by store/interceptor
+            }
         }, 400);
     };
 

@@ -3,8 +3,8 @@ import { Bell, BellOff, CheckCheck, Circle } from 'lucide-react';
 import { useNotificationStore } from '../../store/notificationStore';
 import { useSocket } from '../../hooks/useSocket';
 import { useToast } from '../../hooks/useToast';
-import { formatDistanceToNow } from 'date-fns';
-import { cn } from '../../lib/utils';
+import { formatDistanceToNow as dfFormatDistanceToNow } from 'date-fns';
+import { cn, formatDistanceToNow } from '../../lib/utils';
 import { Badge } from '../ui/badge';
 import {
     DropdownMenu,
@@ -125,7 +125,7 @@ export default function NotificationBell() {
                                             {n.title}
                                         </p>
                                         <span className="text-[10px] text-slate-400 whitespace-nowrap">
-                                            {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
+                                            {formatDistanceToNow(n.createdAt)}
                                         </span>
                                     </div>
                                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 line-clamp-2 leading-relaxed">

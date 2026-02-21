@@ -9,6 +9,7 @@ import {
     ResponsiveContainer,
     Cell
 } from 'recharts';
+import { cn } from '../../lib/utils';
 
 const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
@@ -36,8 +37,6 @@ const CustomTooltip = ({ active, payload, label }) => {
     }
     return null;
 };
-
-import { cn } from '../../lib/utils';
 
 export default function ROIChart({ data }) {
     if (!data || data.length === 0) return null;

@@ -74,32 +74,83 @@ export const getVehicleROIData = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Monthly financial summary (last 6 months)
+ * @desc    Monthly financial summary + ROI + KPIs
  * @route   GET /api/analytics/monthly-summary
  * @access  Private (fleet_manager, financial)
  */
 export const getMonthlySummaryData = asyncHandler(async (req, res) => {
-    const data = await getMonthlySummary();
+    const [monthlySummary, roiData] = await Promise.all([
+        getMonthlySummary(),
+        getVehicleROI(),
+    ]);
+
+    // Derived KPIs from the latest month in summary
+    const latestMonth = monthlySummary[monthlySummary.length - 1] || {};
+    const kpis = {
+        fuelCost: latestMonth.fuelCost || 0,
+        maintCost: latestMonth.maintenanceCost || 0,
+        revenue: latestMonth.revenue || 0,
+        profit: latestMonth.netProfit || 0,
+        trend: 0, // In production, calculate against previous month
+    };
+
+    // Calculate trend if possible
+    if (monthlySummary.length >= 2) {
+        const prevMonth = monthlySummary[monthlySummary.length - 2];
+        if (prevMonth.netProfit !== 0) {
+            kpis.trend = Math.round(((latestMonth.netProfit - prevMonth.netProfit) / Math.abs(prevMonth.netProfit)) * 1000) / 10;
+        }
+    }
 
     res.status(200).json({
         success: true,
-        data,
-        message: 'Monthly summary fetched successfully',
+        data: {
+            kpis,
+            trendData: monthlySummary,
+            roiData: roiData.slice(0, 5), // top 5 for chart
+            expensiveVehicles: [...roiData].sort((a, b) => b.totalOperationalCost - a.totalOperationalCost).slice(0, 5),
+        },
+        message: 'Financial analytics summary fetched successfully',
     });
 });
 
 /**
- * @desc    Driver performance stats
+ * @desc    Driver performance stats + Safety Metrics
  * @route   GET /api/analytics/driver-stats
  * @access  Private (fleet_manager, safety_officer)
  */
 export const getDriverStats = asyncHandler(async (req, res) => {
-    const data = await getDriverPerformanceStats();
+    const drivers = await getDriverPerformanceStats();
+
+    const kpis = {
+        expiring: drivers.filter(d => d.licenseExpiryDays > 0 && d.licenseExpiryDays <= 30).length,
+        expired: drivers.filter(d => d.licenseExpiryDays <= 0).length,
+        suspended: drivers.filter(d => d.status === 'Suspended' || d.status === 'Inactive').length,
+        avgScore: drivers.length > 0
+            ? Math.round((drivers.reduce((acc, d) => acc + d.safetyScore, 0) / drivers.length) * 10) / 10
+            : 0,
+    };
+
+    const criticalAlerts = drivers
+        .filter(d => d.licenseExpiryDays <= 30)
+        .map(d => ({
+            id: d.driverId,
+            driverName: d.name,
+            licenseNumber: d.licenseNumber,
+            type: 'License Renewal',
+            expiryDate: d.expiryDate, // Note: ensure this exists in service if needed, or derived
+            severity: d.licenseExpiryDays <= 0 ? 'expired' : 'expiring',
+        }));
 
     res.status(200).json({
         success: true,
-        data,
-        message: 'Driver stats fetched successfully',
+        data: {
+            kpis,
+            leaderboard: drivers,
+            criticalAlerts,
+            suspendedDrivers: drivers.filter(d => d.status === 'Suspended'),
+        },
+        message: 'Safety analytics summary fetched successfully',
     });
 });
 
