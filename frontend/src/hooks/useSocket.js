@@ -21,11 +21,11 @@ export const useSocket = () => {
                 setIsConnected(true);
                 console.log('🔌 Socket connected');
 
-                // Join role-based room
-                socket.emit('join_room', `role:${user.role}`);
-
-                // Join personal room for notifications
-                socket.emit('join_room', `user:${user._id}`);
+                // Join rooms (notifications & role-based updates)
+                socket.emit('join_room', {
+                    userId: user._id,
+                    role: user.role
+                });
             });
 
             socket.on('disconnect', () => {

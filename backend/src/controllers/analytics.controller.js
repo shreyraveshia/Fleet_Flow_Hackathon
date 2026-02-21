@@ -49,11 +49,18 @@ export const getDashboard = asyncHandler(async (req, res) => {
  * @access  Private (fleet_manager, financial, safety_officer)
  */
 export const getFuelEfficiencyData = asyncHandler(async (req, res) => {
-    const data = await getFuelEfficiency();
+    const rawData = await getFuelEfficiency();
+
+    // Shape for chart: { name, fuelEfficiency, costPerKm }
+    const chartData = rawData.map(v => ({
+        name: v.licensePlate || v.name,
+        fuelEfficiency: v.fuelEfficiency || 0,
+        costPerKm: v.costPerKm || 0,
+    }));
 
     res.status(200).json({
         success: true,
-        data,
+        data: { chartData, list: rawData },
         message: 'Fuel efficiency data fetched successfully',
     });
 });
@@ -64,11 +71,19 @@ export const getFuelEfficiencyData = asyncHandler(async (req, res) => {
  * @access  Private (fleet_manager, financial)
  */
 export const getVehicleROIData = asyncHandler(async (req, res) => {
-    const data = await getVehicleROI();
+    const rawData = await getVehicleROI();
+    const profitableCount = rawData.filter(v => (v.netProfit || 0) > 0).length;
+    const unprofitableCount = rawData.length - profitableCount;
+
+    // Shape for horizontal bar chart: { name, netProfit }
+    const chartData = rawData.map(v => ({
+        name: v.licensePlate || v.name,
+        netProfit: v.netProfit || 0,
+    }));
 
     res.status(200).json({
         success: true,
-        data,
+        data: { chartData, list: rawData, profitableCount, unprofitableCount },
         message: 'Vehicle ROI data fetched successfully',
     });
 });
@@ -102,12 +117,17 @@ export const getMonthlySummaryData = asyncHandler(async (req, res) => {
         }
     }
 
+    // Build chart-friendly array for CostTrendChart (reverse to chronological)
+    const chartData = [...monthlySummary].reverse();
+    const list = [...monthlySummary].reverse();
+
     res.status(200).json({
         success: true,
         data: {
             kpis,
-            trendData: monthlySummary,
-            roiData: roiData.slice(0, 5), // top 5 for chart
+            chartData,
+            list,
+            roiData: roiData.slice(0, 5),
             expensiveVehicles: [...roiData].sort((a, b) => b.totalOperationalCost - a.totalOperationalCost).slice(0, 5),
         },
         message: 'Financial analytics summary fetched successfully',

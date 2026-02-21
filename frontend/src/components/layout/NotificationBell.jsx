@@ -43,13 +43,16 @@ export default function NotificationBell() {
 
     React.useEffect(() => {
         const handleNewNotification = (notification) => {
-            addNotification(notification);
+            // Refresh from server to get full consistent data with IDs
+            fetchNotifications();
+            fetchUnreadCount();
+
             info(notification.message, notification.title || 'New Notification');
         };
 
         on('new_notification', handleNewNotification);
         return () => off('new_notification', handleNewNotification);
-    }, [on, off, addNotification, info]);
+    }, [on, off, fetchNotifications, fetchUnreadCount, info]);
 
     return (
         <DropdownMenu>

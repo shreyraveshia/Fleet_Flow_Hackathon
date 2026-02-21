@@ -35,7 +35,7 @@ router.get('/:id', getExpense);
 // Update expense (fleet_manager, financial)
 router.put('/:id', authorize('fleet_manager', 'financial'), updateExpense);
 
-// Delete expense (fleet_manager only)
-router.delete('/:id', authorize('fleet_manager'), deleteExpense);
+// Delete expense (fleet_manager, financial)
+router.delete('/:id', authorize('fleet_manager', 'financial'), deleteExpense);
 
 export default router;

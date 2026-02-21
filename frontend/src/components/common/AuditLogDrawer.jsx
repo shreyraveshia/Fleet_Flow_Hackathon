@@ -134,7 +134,7 @@ export default function AuditLogDrawer({ isOpen, onClose }) {
                                         <div className="flex flex-col space-y-1">
                                             <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
                                                 <User className="h-3 w-3" />
-                                                <span>By: <span className="font-medium text-slate-700 dark:text-slate-300">{log.performer?.name || 'System'}</span></span>
+                                                <span>By: <span className="font-medium text-slate-700 dark:text-slate-300">{log.performedBy?.name || log.performedByName || 'System'}</span></span>
                                             </div>
                                             <div className="flex items-center gap-1.5 text-[11px] text-slate-400 dark:text-slate-500">
                                                 <Calendar className="h-3 w-3" />

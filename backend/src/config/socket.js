@@ -17,8 +17,11 @@ export const initSocket = (httpServer) => {
     io.on('connection', (socket) => {
         console.log(`🔌 Socket connected: ${socket.id}`);
 
-        // Join role-based room
-        socket.on(SOCKET_EVENTS.JOIN_ROOM, ({ userId, role }) => {
+        // Join rooms (handles both string and object payloads for flexibility)
+        socket.on(SOCKET_EVENTS.JOIN_ROOM, (data) => {
+            const userId = typeof data === 'object' ? data.userId : null;
+            const role = typeof data === 'object' ? data.role : data;
+
             if (userId) {
                 socket.join(`user:${userId}`);
             }

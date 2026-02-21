@@ -25,7 +25,7 @@ export const useDownload = () => {
         setIsDownloading(true);
         try {
             const response = await apiCall();
-            downloadFile(response, filename);
+            downloadFile(response.data, filename);
         } catch (err) {
             error(err.message || 'Failed to download CSV');
         } finally {
@@ -37,7 +37,7 @@ export const useDownload = () => {
         setIsDownloading(true);
         try {
             const response = await apiCall();
-            downloadFile(response, filename);
+            downloadFile(response.data, filename);
         } catch (err) {
             error(err.message || 'Failed to download PDF');
         } finally {

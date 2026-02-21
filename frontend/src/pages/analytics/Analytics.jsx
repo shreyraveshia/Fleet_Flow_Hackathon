@@ -46,16 +46,26 @@ import ROIChart from '../../components/charts/ROIChart';
 import DriverScoreChart from '../../components/charts/DriverScoreChart';
 import { cn, formatDate } from '../../lib/utils';
 import { format } from 'date-fns';
+import { useRBAC } from '../../hooks/useRBAC';
 
 export default function Analytics() {
     const navigate = useNavigate();
+    const { can, role } = useRBAC();
+
+    // --- RBAC Protection ---
+    React.useEffect(() => {
+        if (!can('view_analytics')) {
+            navigate('/dashboard');
+        }
+    }, [can, navigate]);
+
     const [activeTab, setActiveTab] = React.useState('overview');
     const [data, setData] = React.useState({
         overview: null,
-        fuel: null,
-        roi: null,
-        trends: null,
-        drivers: null
+        'fuel-efficiency': null,
+        'vehicle-roi': null,
+        'monthly-trends': null,
+        'driver-stats': null,
     });
     const [loading, setLoading] = React.useState(true);
 
@@ -68,10 +78,10 @@ export default function Analytics() {
             let res;
             switch (tab) {
                 case 'overview': res = await analyticsAPI.getFleetOverview(); break;
-                case 'fuel': res = await analyticsAPI.getFuelEfficiency(); break;
-                case 'roi': res = await analyticsAPI.getVehicleROI(); break;
-                case 'trends': res = await analyticsAPI.getMonthlySummary(); break;
-                case 'drivers': res = await analyticsAPI.getDriverStats(); break;
+                case 'fuel-efficiency': res = await analyticsAPI.getFuelEfficiency(); break;
+                case 'vehicle-roi': res = await analyticsAPI.getVehicleROI(); break;
+                case 'monthly-trends': res = await analyticsAPI.getMonthlySummary(); break;
+                case 'driver-stats': res = await analyticsAPI.getDriverStats(); break;
                 default: return;
             }
             setData(prev => ({ ...prev, [tab]: res.data }));
@@ -89,7 +99,7 @@ export default function Analytics() {
     // --- Column Definitions ---
 
     const fuelColumns = [
-        { key: 'vehicle', label: 'Vehicle', render: (row) => <span className="font-bold text-xs uppercase">{row.plateNumber}</span>, sortable: true },
+        { key: 'vehicle', label: 'Vehicle', render: (row) => <span className="font-bold text-xs uppercase">{row.licensePlate || row.plateNumber}</span>, sortable: true },
         { key: 'type', label: 'Type', render: (row) => <Badge variant="outline" className="text-[10px]">{row.type}</Badge> },
         { key: 'distance', label: 'Distance', render: (row) => <span className="text-xs">{row.totalDistance?.toLocaleString()} km</span> },
         { key: 'liters', label: 'Fuel (L)', render: (row) => <span className="text-xs">{row.totalLiters?.toLocaleString()} L</span> },
@@ -154,13 +164,26 @@ export default function Analytics() {
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
                 <TabsList className="bg-transparent border-b border-slate-200 dark:border-slate-800 h-auto p-0 gap-8">
-                    {['Overview', 'Fuel Efficiency', 'Vehicle ROI', 'Monthly Trends', 'Driver Stats'].map(tab => (
+                    {[
+                        { label: 'Overview', permission: 'view_analytics' },
+                        { label: 'Fuel Efficiency', permission: 'view_analytics' },
+                        { label: 'Vehicle ROI', permission: 'view_analytics' },
+                        { label: 'Monthly Trends', permission: 'view_analytics' },
+                        { label: 'Driver Stats', permission: 'view_analytics' }
+                    ].filter(tab => {
+                        // Managers see everything, Safety Officers see only Efficiency and Stats
+                        if (role === 'fleet_manager') return true;
+                        if (role === 'safety_officer') {
+                            return ['Fuel Efficiency', 'Driver Stats'].includes(tab.label);
+                        }
+                        return false;
+                    }).map(tab => (
                         <TabsTrigger
-                            key={tab}
-                            value={tab.toLowerCase().replace(' ', '-')}
+                            key={tab.label}
+                            value={tab.label.toLowerCase().replace(' ', '-')}
                             className="px-0 py-3 rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none font-bold text-xs tracking-widest uppercase transition-all"
                         >
-                            {tab}
+                            {tab.label}
                         </TabsTrigger>
                     ))}
                 </TabsList>
@@ -169,19 +192,19 @@ export default function Analytics() {
                     {loading ? <SkeletonLoader type="page" /> : (
                         <>
                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-                                <KPICard title="Active Fleet" value={data.overview?.kpis?.activeCount || 0} icon={Truck} color="blue" />
-                                <KPICard title="Mnt. Alerts" value={data.overview?.kpis?.maintenanceCount || 0} icon={AlertTriangle} color="amber" />
-                                <KPICard title="Utilization" value={data.overview?.kpis?.utilization || 0} suffix="%" icon={Activity} color="emerald" />
+                                <KPICard title="Active Fleet" value={data.overview?.kpis?.activeFleet || 0} icon={Truck} color="blue" />
+                                <KPICard title="Mnt. Alerts" value={data.overview?.kpis?.maintenanceAlerts || 0} icon={AlertTriangle} color="amber" />
+                                <KPICard title="Utilization" value={data.overview?.kpis?.utilizationRate || 0} suffix="%" icon={Activity} color="emerald" />
                                 <KPICard title="Total Assets" value={data.overview?.kpis?.totalVehicles || 0} icon={Package} color="slate" />
-                                <KPICard title="Available" value={data.overview?.kpis?.availableDrivers || 0} icon={Users} color="indigo" />
-                                <KPICard title="Pending" value={data.overview?.kpis?.pendingTrips || 0} icon={Clock} color="orange" />
+                                <KPICard title="Available Drivers" value={data.overview?.kpis?.availableDrivers || 0} icon={Users} color="indigo" />
+                                <KPICard title="Pending Trips" value={data.overview?.kpis?.pendingCargo || 0} icon={Clock} color="orange" />
                             </div>
 
                             <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
                                 <Card className="border-none shadow-sm"><CardContent className="p-6"><h4 className="text-xs font-black uppercase mb-4 text-slate-400">Monthly Revenue Trend</h4><CostTrendChart data={data.overview?.monthlySummary} compact /></CardContent></Card>
                                 <Card className="border-none shadow-sm"><CardContent className="p-6"><h4 className="text-xs font-black uppercase mb-4 text-slate-400">Driver Performance Score</h4><DriverScoreChart data={data.overview?.kpis?.leaderboard} compact /></CardContent></Card>
-                                <Card className="border-none shadow-sm"><CardContent className="p-6"><h4 className="text-xs font-black uppercase mb-4 text-slate-400">Fuel Economy km/L</h4><FuelEfficiencyChart data={data.overview?.fuelEfficiency} compact /></CardContent></Card>
-                                <Card className="border-none shadow-sm"><CardContent className="p-6"><h4 className="text-xs font-black uppercase mb-4 text-slate-400">Vehicle Net Impact</h4><ROIChart data={data.overview?.roiData} compact /></CardContent></Card>
+                                <Card className="border-none shadow-sm"><CardContent className="p-6"><h4 className="text-xs font-black uppercase mb-4 text-slate-400">Fuel Economy km/L</h4><FuelEfficiencyChart data={data.overview?.fuelEfficiency?.map(v => ({ name: v.licensePlate || v.name, fuelEfficiency: v.fuelEfficiency || 0, costPerKm: v.costPerKm || 0 }))} compact /></CardContent></Card>
+                                <Card className="border-none shadow-sm"><CardContent className="p-6"><h4 className="text-xs font-black uppercase mb-4 text-slate-400">Vehicle Net Impact</h4><ROIChart data={data.overview?.fuelEfficiency?.map(v => ({ name: v.licensePlate || v.name, netProfit: 0 }))} compact /></CardContent></Card>
                             </div>
                         </>
                     )}
@@ -196,13 +219,13 @@ export default function Analytics() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-6">
-                            <FuelEfficiencyChart data={data.fuel?.chartData} />
+                            <FuelEfficiencyChart data={data['fuel-efficiency']?.chartData} />
                         </CardContent>
                     </Card>
                     <div className="space-y-4">
                         <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 pl-1">Payload Efficiency Ledger</h3>
                         <Card className="border-none shadow-sm overflow-hidden">
-                            <DataTable columns={fuelColumns} data={data.fuel?.list || []} isLoading={loading} />
+                            <DataTable columns={fuelColumns} data={data['fuel-efficiency']?.list || []} isLoading={loading} />
                         </Card>
                     </div>
                 </TabsContent>
@@ -211,47 +234,52 @@ export default function Analytics() {
                     <div className="grid grid-cols-3 gap-6">
                         <Card className="col-span-2 border-none shadow-sm">
                             <CardHeader className="p-6"><CardTitle className="text-lg font-black">Profitability Impact</CardTitle></CardHeader>
-                            <CardContent className="p-6"><ROIChart data={data.roi?.chartData} /></CardContent>
+                            <CardContent className="p-6"><ROIChart data={data['vehicle-roi']?.chartData} /></CardContent>
                         </Card>
                         <div className="space-y-6">
                             <Card className="bg-emerald-600 text-white border-none shadow-xl">
                                 <CardContent className="p-6 text-center">
                                     <TrendingUp className="h-8 w-8 mx-auto mb-3 opacity-50" />
-                                    <h4 className="text-3xl font-black">{data.roi?.profitableCount}</h4>
+                                    <h4 className="text-3xl font-black">{data['vehicle-roi']?.profitableCount ?? '—'}</h4>
                                     <p className="text-[10px] font-bold uppercase tracking-widest mt-1 opacity-70">Profitable Assets</p>
                                 </CardContent>
                             </Card>
                             <Card className="bg-red-600 text-white border-none shadow-xl">
                                 <CardContent className="p-6 text-center">
                                     <AlertTriangle className="h-8 w-8 mx-auto mb-3 opacity-50" />
-                                    <h4 className="text-3xl font-black">{data.roi?.unprofitableCount}</h4>
+                                    <h4 className="text-3xl font-black">{data['vehicle-roi']?.unprofitableCount ?? '—'}</h4>
                                     <p className="text-[10px] font-bold uppercase tracking-widest mt-1 opacity-70">Loss-Making Assets</p>
                                 </CardContent>
                             </Card>
                         </div>
                     </div>
                     <Card className="border-none shadow-sm overflow-hidden">
-                        <DataTable columns={roiColumns} data={data.roi?.list || []} isLoading={loading} />
+                        <DataTable
+                            columns={roiColumns}
+                            data={data['vehicle-roi']?.list || []}
+                            isLoading={loading}
+                            getRowClassName={(row) => (row.netProfit > 0 ? "bg-emerald-50/30 hover:bg-emerald-50/50 dark:bg-emerald-900/5 dark:hover:bg-emerald-900/10" : "bg-red-50/30 hover:bg-red-50/50 dark:bg-red-900/5 dark:hover:bg-red-900/10")}
+                        />
                     </Card>
                 </TabsContent>
 
                 <TabsContent value="monthly-trends" className="space-y-8 mt-0 outline-none">
                     <Card className="border-none shadow-sm">
                         <CardHeader className="p-6"><CardTitle className="text-lg font-black">Financial Momentum (6 Months)</CardTitle></CardHeader>
-                        <CardContent className="p-6"><CostTrendChart data={data.trends?.chartData} /></CardContent>
+                        <CardContent className="p-6"><CostTrendChart data={data['monthly-trends']?.chartData} /></CardContent>
                     </Card>
                     <Card className="border-none shadow-sm overflow-hidden">
-                        <DataTable columns={trendColumns} data={data.trends?.list || []} isLoading={loading} />
+                        <DataTable columns={trendColumns} data={data['monthly-trends']?.list || []} isLoading={loading} />
                     </Card>
                 </TabsContent>
 
                 <TabsContent value="driver-stats" className="space-y-8 mt-0 outline-none">
                     <Card className="border-none shadow-sm">
                         <CardHeader className="p-6"><CardTitle className="text-lg font-black">Safety Leaderboard Distribution</CardTitle></CardHeader>
-                        <CardContent className="p-6"><DriverScoreChart data={data.drivers?.leaderboard} /></CardContent>
+                        <CardContent className="p-6"><DriverScoreChart data={data['driver-stats']?.leaderboard} /></CardContent>
                     </Card>
                     <Card className="border-none shadow-sm overflow-hidden">
-                        <DataTable columns={driverColumns} data={data.drivers?.leaderboard || []} isLoading={loading} />
+                        <DataTable columns={driverColumns} data={data['driver-stats']?.leaderboard || []} isLoading={loading} />
                     </Card>
                 </TabsContent>
             </Tabs>

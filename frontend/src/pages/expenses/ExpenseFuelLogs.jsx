@@ -16,7 +16,8 @@ import {
     Trash2,
     Edit2,
     AlertCircle,
-    Fuel
+    Fuel,
+    ClipboardList
 } from 'lucide-react';
 import { expenseAPI } from '../../api/expense.api';
 import { useVehicleStore } from '../../store/vehicleStore';
@@ -50,9 +51,31 @@ import { Separator } from '../../components/ui/separator';
 import { cn, formatDate } from '../../lib/utils';
 import { format } from 'date-fns';
 
+// ── Inline KPI card used in the summary row ───────────────────────────────────
+const COLOR_MAP = {
+    blue: { bg: 'bg-blue-50 dark:bg-blue-900/10', icon: 'text-blue-500' },
+    amber: { bg: 'bg-amber-50 dark:bg-amber-900/10', icon: 'text-amber-500' },
+    red: { bg: 'bg-red-50 dark:bg-red-900/10', icon: 'text-red-500' },
+    emerald: { bg: 'bg-emerald-50 dark:bg-emerald-900/10', icon: 'text-emerald-500' },
+};
+function KPICard({ title, value, prefix = '', suffix = '', icon: Icon, color = 'blue' }) {
+    const c = COLOR_MAP[color] || COLOR_MAP.blue;
+    return (
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 flex items-center justify-between shadow-sm">
+            <div>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{title}</p>
+                <h3 className="text-2xl font-black mt-1">{prefix}{value ?? '—'}{suffix}</h3>
+            </div>
+            <div className={cn('h-12 w-12 rounded-2xl flex items-center justify-center', c.bg)}>
+                <Icon className={cn('h-6 w-6', c.icon)} />
+            </div>
+        </div>
+    );
+}
+
 export default function ExpenseFuelLogs() {
     const [expenses, setExpenses] = React.useState([]);
-    const [summary, setSummary] = React.useState({ fuel: 0, other: 0, total: 0, avgEfficiency: 0 });
+    const [summary, setSummary] = React.useState({ totalFuel: 0, totalOther: 0, avgFuelEfficiency: 0 });
     const [isLoading, setIsLoading] = React.useState(true);
     const [total, setTotal] = React.useState(0);
     const [pagination, setPagination] = React.useState({ page: 1, limit: 10 });
@@ -83,13 +106,21 @@ export default function ExpenseFuelLogs() {
     const fetchExpenses = React.useCallback(async () => {
         setIsLoading(true);
         try {
-            const [listRes, summaryRes] = await Promise.all([
-                expenseAPI.getAll({ ...filters, ...pagination }),
-                expenseAPI.getMonthlySummary()
-            ]);
-            setExpenses(listRes.data.expenses);
-            setTotal(listRes.data.total);
-            setSummary(summaryRes.data);
+            const params = { page: pagination.page, limit: pagination.limit };
+            if (filters.vehicleId) params.vehicle = filters.vehicleId;
+            if (filters.type) params.type = filters.type;
+            if (filters.startDate) params.startDate = filters.startDate;
+            if (filters.endDate) params.endDate = filters.endDate;
+            const listRes = await expenseAPI.getAll(params);
+            setExpenses(listRes.data.expenses || []);
+            setTotal(listRes.data.total || 0);
+            // getExpenses returns an inline summary — no separate call needed
+            const s = listRes.data.summary || {};
+            setSummary({
+                totalFuel: s.totalFuel || 0,
+                totalOther: s.totalOther || 0,
+                avgFuelEfficiency: s.avgFuelEfficiency || 0,
+            });
         } catch (err) {
             error('Failed to load expense logs');
         } finally {
@@ -110,11 +141,17 @@ export default function ExpenseFuelLogs() {
     const handleCreate = async () => {
         try {
             await expenseAPI.create({
-                ...formData,
+                vehicle: formData.vehicleId,
+                driver: formData.driverId || undefined,
+                trip: formData.tripId || undefined,
+                type: formData.type,
+                date: formData.date,
+                notes: formData.notes,
                 totalCost: formData.type === 'Fuel' ? calcTotalCost : parseFloat(formData.totalCost),
-                liters: parseFloat(formData.liters),
-                distanceCovered: parseFloat(formData.distanceCovered),
-                fuelEfficiency: formData.type === 'Fuel' ? calcEfficiency : undefined
+                liters: formData.liters ? parseFloat(formData.liters) : undefined,
+                costPerLiter: formData.costPerLiter ? parseFloat(formData.costPerLiter) : undefined,
+                distanceCovered: formData.distanceCovered ? parseFloat(formData.distanceCovered) : undefined,
+                fuelEfficiency: formData.type === 'Fuel' && calcEfficiency > 0 ? calcEfficiency : undefined,
             });
             success('Expense log added successfully');
             setIsAddModalOpen(false);
@@ -142,7 +179,7 @@ export default function ExpenseFuelLogs() {
             label: 'Vehicle',
             render: (row) => (
                 <div className="flex flex-col">
-                    <span className="font-bold text-sm">{row.vehicle?.plateNumber}</span>
+                    <span className="font-bold text-sm">{row.vehicle?.licensePlate}</span>
                     <span className="text-[10px] text-slate-500">{row.vehicle?.name}</span>
                 </div>
             )
@@ -178,7 +215,7 @@ export default function ExpenseFuelLogs() {
                         <Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-32">
-                        {(can('financial') || can('manager')) && (
+                        {can('manage_expenses') && (
                             <>
                                 <DropdownMenuItem><Edit2 className="h-4 w-4 mr-2" /> Edit</DropdownMenuItem>
                                 <DropdownMenuItem className="text-red-600" onClick={() => { setSelectedExpense(row); setIsDeleteModalOpen(true); }}>
@@ -199,7 +236,7 @@ export default function ExpenseFuelLogs() {
                 title="Expense & Fuel Logs"
                 subtitle="Manage fleet expenditures, track fuel efficiency, and monitor operational costs."
                 actions={
-                    (can('financial') || can('manager')) && (
+                    can('manage_expenses') && (
                         <Button onClick={() => setIsAddModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 shadow-xl shadow-emerald-100">
                             <Plus className="h-4 w-4 mr-2" />
                             Add Expense Record
@@ -210,26 +247,26 @@ export default function ExpenseFuelLogs() {
 
             {/* Summary Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <KPICard title="Monthly Fuel" value={summary.fuel?.toLocaleString()} suffix="₹" icon={Fuel} color="blue" />
-                <KPICard title="Fixed/Operational" value={summary.other?.toLocaleString()} suffix="₹" icon={Wallet} color="amber" />
-                <KPICard title="Total Spend" value={summary.total?.toLocaleString()} suffix="₹" icon={TrendingUp} color="red" />
-                <KPICard title="Fleet Efficiency" value={summary.avgEfficiency?.toFixed(1)} suffix=" km/L" icon={Activity} color="emerald" />
+                <KPICard title="Monthly Fuel" value={summary.totalFuel?.toLocaleString()} prefix="₹" icon={Fuel} color="blue" />
+                <KPICard title="Fixed/Operational" value={summary.totalOther?.toLocaleString()} prefix="₹" icon={Wallet} color="amber" />
+                <KPICard title="Total Spend" value={(summary.totalFuel + summary.totalOther)?.toLocaleString()} prefix="₹" icon={TrendingUp} color="red" />
+                <KPICard title="Fleet Efficiency" value={summary.avgFuelEfficiency?.toFixed(1)} suffix=" km/L" icon={Activity} color="emerald" />
             </div>
 
             {/* Filter Bar */}
             <div className="flex flex-col md:flex-row gap-4 p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm">
                 <div className="flex flex-1 gap-4">
-                    <Select value={filters.vehicleId} onValueChange={(v) => setFilters(f => ({ ...f, vehicleId: v }))}>
+                    <Select value={filters.vehicleId || 'all'} onValueChange={(v) => setFilters(f => ({ ...f, vehicleId: v === 'all' ? '' : v }))}>
                         <SelectTrigger className="w-[200px]"><SelectValue placeholder="All Vehicles" /></SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="">All Vehicles</SelectItem>
-                            {vehicles.map(v => <SelectItem key={v._id} value={v._id}>{v.plateNumber}</SelectItem>)}
+                            <SelectItem value="all">All Vehicles</SelectItem>
+                            {vehicles.map(v => <SelectItem key={v._id} value={v._id}>{v.licensePlate}</SelectItem>)}
                         </SelectContent>
                     </Select>
-                    <Select value={filters.type} onValueChange={(v) => setFilters(f => ({ ...f, type: v }))}>
+                    <Select value={filters.type || 'all'} onValueChange={(v) => setFilters(f => ({ ...f, type: v === 'all' ? '' : v }))}>
                         <SelectTrigger className="w-[150px]"><SelectValue placeholder="All Types" /></SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="">All Types</SelectItem>
+                            <SelectItem value="all">All Types</SelectItem>
                             <SelectItem value="Fuel">Fuel</SelectItem>
                             <SelectItem value="Toll">Toll</SelectItem>
                             <SelectItem value="Repair">Repair</SelectItem>
@@ -263,7 +300,7 @@ export default function ExpenseFuelLogs() {
                             <Select onValueChange={(v) => setFormData(p => ({ ...p, vehicleId: v }))}>
                                 <SelectTrigger><SelectValue placeholder="Select vehicle" /></SelectTrigger>
                                 <SelectContent>
-                                    {vehicles.map(v => <SelectItem key={v._id} value={v._id}>{v.plateNumber} — {v.name}</SelectItem>)}
+                                    {vehicles.map(v => <SelectItem key={v._id} value={v._id}>{v.licensePlate} — {v.name}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>

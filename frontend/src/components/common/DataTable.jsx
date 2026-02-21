@@ -38,7 +38,8 @@ export default function DataTable({
     page = 1,
     limit = 25,
     onPageChange,
-    onLimitChange
+    onLimitChange,
+    getRowClassName
 }) {
     const [searchTerm, setSearchTerm] = React.useState('');
     const [sortConfig, setSortConfig] = React.useState({ key: null, direction: null });
@@ -152,7 +153,10 @@ export default function DataTable({
                                 sortedData.map((row, rowIndex) => (
                                     <TableRow
                                         key={row._id || row.id}
-                                        className={cn(onRowClick && "cursor-pointer")}
+                                        className={cn(
+                                            onRowClick && "cursor-pointer",
+                                            getRowClassName && getRowClassName(row)
+                                        )}
                                         onClick={() => onRowClick?.(row)}
                                     >
                                         {columns.map((col) => (
