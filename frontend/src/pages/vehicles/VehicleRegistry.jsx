@@ -20,7 +20,8 @@ import {
     Search,
     X,
     AlertTriangle,
-    ExternalLink
+    ExternalLink,
+    ArrowRight
 } from 'lucide-react';
 import { useVehicleStore } from '../../store/vehicleStore';
 import { useRBAC } from '../../hooks/useRBAC';
@@ -85,19 +86,17 @@ export default function VehicleRegistry() {
     const [statusToChange, setStatusToChange] = React.useState('');
 
     const [pagination, setPagination] = React.useState({ page: 1, limit: 10 });
+    // Local search state so typing feels instant; we debounce the API call
+    const [searchInput, setSearchInput] = React.useState(filters.search || '');
 
     // Handle initial action from search params
     React.useEffect(() => {
         if (searchParams.get('action') === 'add') {
             setIsAddModalOpen(true);
-            // Clear the param
             setSearchParams({}, { replace: true });
         }
     }, [searchParams, setSearchParams]);
 
-    React.useEffect(() => {
-        fetchVehicles(pagination);
-    }, [fetchVehicles, filters, pagination]);
 
     React.useEffect(() => {
         const handleUpdate = () => {
@@ -113,7 +112,6 @@ export default function VehicleRegistry() {
         info('License plate copied to clipboard');
     };
 
-    // Reset to page 1 when filters change to avoid empty pages
     const handleFilterChange = (newFilters) => {
         setFilters(prev => ({ ...prev, ...newFilters }));
         setPagination(prev => ({ ...prev, page: 1 }));
@@ -123,6 +121,19 @@ export default function VehicleRegistry() {
         setFilters({ search: '', type: 'All', status: 'All' });
         setPagination(prev => ({ ...prev, page: 1 }));
     };
+
+    // Debounce: push search text to filter store 400ms after user stops typing
+    React.useEffect(() => {
+        const timer = setTimeout(() => {
+            setFilters(prev => ({ ...prev, search: searchInput }));
+            setPagination(prev => ({ ...prev, page: 1 }));
+        }, 400);
+        return () => clearTimeout(timer);
+    }, [searchInput]);
+
+    React.useEffect(() => {
+        fetchVehicles(pagination);
+    }, [fetchVehicles, filters, pagination]);
 
     // --- Handlers ---
     const handleAddSubmit = async (e) => {
@@ -187,7 +198,7 @@ export default function VehicleRegistry() {
     };
 
     const handleRetireSubmit = async () => {
-        if (retireConfirmation !== selectedVehicle.plateNumber) {
+        if (retireConfirmation !== selectedVehicle.licensePlate) {
             error('License plate does not match');
             return;
         }
@@ -231,14 +242,14 @@ export default function VehicleRegistry() {
             }
         },
         {
-            key: 'plateNumber',
+            key: 'licensePlate',
             label: 'License Plate',
             render: (row) => (
                 <div
                     className="group flex items-center gap-2 font-mono text-sm font-bold bg-slate-50 dark:bg-slate-800/50 px-2 py-1 rounded border border-slate-200 dark:border-slate-700 w-fit cursor-pointer hover:bg-white transition-all shadow-sm active:scale-95"
-                    onClick={(e) => { e.stopPropagation(); handleCopyPlate(row.plateNumber); }}
+                    onClick={(e) => { e.stopPropagation(); handleCopyPlate(row.licensePlate); }}
                 >
-                    {row.plateNumber}
+                    {row.licensePlate || '—'}
                     <Copy className="h-3 w-3 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
             )
@@ -249,12 +260,12 @@ export default function VehicleRegistry() {
             render: (row) => <Badge variant="outline" className="font-bold text-[10px] uppercase select-none">{row.type}</Badge>
         },
         {
-            key: 'capacity',
+            key: 'maxLoadCapacity',
             label: 'Capacity',
             render: (row) => (
                 <div className="flex items-center gap-1.5 text-xs font-semibold">
                     <Weight className="h-3 w-3 text-slate-400" />
-                    {row.capacity?.toLocaleString()} kg
+                    {row.maxLoadCapacity?.toLocaleString() ?? '—'} kg
                 </div>
             )
         },
@@ -295,7 +306,7 @@ export default function VehicleRegistry() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-48">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => info(`Vehicle detail view for ${row.plateNumber} coming soon!`)}>
+                        <DropdownMenuItem onClick={() => info(`Vehicle detail view for ${row.licensePlate || row.name} coming soon!`)}>
                             <ExternalLink className="mr-2 h-4 w-4 text-blue-500" />
                             View Details
                         </DropdownMenuItem>
@@ -347,8 +358,8 @@ export default function VehicleRegistry() {
                     <Input
                         placeholder="Search by plate, name, or model..."
                         className="pl-10 h-10 rounded-xl"
-                        value={filters.search}
-                        onChange={(e) => handleFilterChange({ search: e.target.value })}
+                        value={searchInput}
+                        onChange={(e) => setSearchInput(e.target.value)}
                     />
                 </div>
                 <div className="flex gap-4 min-w-[320px]">
@@ -383,8 +394,8 @@ export default function VehicleRegistry() {
                         </SelectContent>
                     </Select>
 
-                    {(filters.search || filters.type !== 'All' || filters.status !== 'All') && (
-                        <Button variant="ghost" size="icon" onClick={handleClearFilters} className="shrink-0 text-slate-400 hover:text-red-500">
+                    {(searchInput || filters.type !== 'All' || filters.status !== 'All') && (
+                        <Button variant="ghost" size="icon" onClick={() => { setSearchInput(''); handleClearFilters(); }} className="shrink-0 text-slate-400 hover:text-red-500">
                             <X className="h-4 w-4" />
                         </Button>
                     )}
@@ -405,7 +416,7 @@ export default function VehicleRegistry() {
                         onLimitChange={(l) => setPagination(prev => ({ ...prev, limit: l }))}
                         searchable={false}
                         emptyMessage="No vehicles found matching your filters."
-                        onRowClick={(row) => info(`Vehicle detail view for ${row.plateNumber || row.name} coming soon!`)}
+                        onRowClick={(row) => info(`Vehicle detail view for ${row.licensePlate || row.name} coming soon!`)}
                     />
                 </CardContent>
             </Card>
@@ -509,7 +520,7 @@ export default function VehicleRegistry() {
                 <Modal
                     isOpen={isEditModalOpen}
                     onClose={() => setIsEditModalOpen(false)}
-                    title={`Edit ${selectedVehicle.plateNumber}`}
+                    title={`Edit ${selectedVehicle.licensePlate || selectedVehicle.name}`}
                     size="lg"
                 >
                     <form onSubmit={handleEditSubmit} className="space-y-6">
@@ -520,7 +531,7 @@ export default function VehicleRegistry() {
                             </div>
                             <div className="space-y-2">
                                 <Label>License Plate</Label>
-                                <Input name="plateNumber" defaultValue={selectedVehicle.plateNumber} className="uppercase" required />
+                                <Input name="plateNumber" defaultValue={selectedVehicle.licensePlate} className="uppercase" required />
                             </div>
                             <div className="space-y-2">
                                 <Label>Make</Label>
@@ -536,7 +547,7 @@ export default function VehicleRegistry() {
                             </div>
                             <div className="space-y-2">
                                 <Label>Max Load (kg)</Label>
-                                <Input name="capacity" type="number" defaultValue={selectedVehicle.capacity} required />
+                                <Input name="capacity" type="number" defaultValue={selectedVehicle.maxLoadCapacity} required />
                             </div>
                         </div>
 
@@ -632,7 +643,7 @@ export default function VehicleRegistry() {
                 >
                     <div className="mt-6 space-y-4">
                         <div className="space-y-2 text-left">
-                            <Label className="text-xs font-bold text-slate-500 uppercase">Type plate to confirm: <span className="text-slate-900 dark:text-white">{selectedVehicle.plateNumber}</span></Label>
+                            <Label className="text-xs font-bold text-slate-500 uppercase">Type plate to confirm: <span className="text-slate-900 dark:text-white">{selectedVehicle.licensePlate}</span></Label>
                             <Input
                                 value={retireConfirmation}
                                 onChange={(e) => setRetireConfirmation(e.target.value.toUpperCase())}
