@@ -1,67 +1,84 @@
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import ProtectedRoute from './ProtectedRoute';
+import RoleRoute from './RoleRoute';
+import LoadingSpinner from '../components/common/LoadingSpinner';
+
+// Layout
 import RoleLayout from '../components/layout/RoleLayout';
 
 // Auth
-import Login from '../pages/auth/Login';
-import Register from '../pages/auth/Register';
+const Login = lazy(() => import('../pages/auth/Login'));
+const Register = lazy(() => import('../pages/auth/Register'));
 
 // Dashboards
-import ManagerDashboard from '../pages/dashboard/ManagerDashboard';
-import DispatcherDashboard from '../pages/dashboard/DispatcherDashboard';
-import SafetyDashboard from '../pages/dashboard/SafetyDashboard';
-import FinancialDashboard from '../pages/dashboard/FinancialDashboard';
+const DashboardSwitcher = lazy(() => import('../pages/dashboard/DashboardSwitcher'));
+const ManagerDashboard = lazy(() => import('../pages/dashboard/ManagerDashboard'));
+const DispatcherDashboard = lazy(() => import('../pages/dashboard/DispatcherDashboard'));
+const SafetyDashboard = lazy(() => import('../pages/dashboard/SafetyDashboard'));
+const FinancialDashboard = lazy(() => import('../pages/dashboard/FinancialDashboard'));
 
-// Core Modules
-import VehicleRegistry from '../pages/vehicles/VehicleRegistry';
-import DriverProfiles from '../pages/drivers/DriverProfiles';
-import TripDispatcher from '../pages/trips/TripDispatcher';
+// Fleet Management
+const VehicleRegistry = lazy(() => import('../pages/vehicles/VehicleRegistry'));
+const DriverProfiles = lazy(() => import('../pages/drivers/DriverProfiles'));
 
-// Maintenance & Expenses
-import MaintenanceLogs from '../pages/maintenance/MaintenanceLogs';
-import ExpenseFuelLogs from '../pages/expenses/ExpenseFuelLogs';
+// Operations
+const TripDispatcher = lazy(() => import('../pages/trips/TripDispatcher'));
+const MaintenanceLogs = lazy(() => import('../pages/maintenance/MaintenanceLogs'));
+const ExpenseFuelLogs = lazy(() => import('../pages/expenses/ExpenseFuelLogs'));
 
 // Analytics
-import Analytics from '../pages/analytics/Analytics';
+const Analytics = lazy(() => import('../pages/analytics/Analytics'));
 
-// Helper for protected routes
-const ProtectedRoute = ({ children }) => {
-    const token = localStorage.getItem('fleet-auth-token');
-    if (!token) return <Navigate to="/login" replace />;
-    return <RoleLayout>{children}</RoleLayout>;
-};
+// Other
+const NotFound = lazy(() => import('../pages/NotFound'));
+
+// Wrapper to show loader during route transitions
+const LazyFallback = () => (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <LoadingSpinner size="lg" />
+    </div>
+);
 
 export default function AppRouter() {
     return (
         <BrowserRouter>
-            <Routes>
-                {/* Public Routes */}
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
+            <Suspense fallback={<LazyFallback />}>
+                <Routes>
+                    {/* Public Routes */}
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
 
-                {/* Dashboard Switcher (Home) */}
-                <Route path="/" element={<ProtectedRoute><ManagerDashboard /></ProtectedRoute>} />
+                    {/* Protected Routes Wrapper */}
+                    <Route path="/" element={<ProtectedRoute><RoleLayout /></ProtectedRoute>}>
+                        {/* Dashboard Home */}
+                        <Route index element={<DashboardSwitcher />} />
+                        <Route path="dashboard" element={<Navigate to="/" replace />} />
 
-                {/* Sub-pages */}
-                <Route path="/dashboards/manager" element={<ProtectedRoute><ManagerDashboard /></ProtectedRoute>} />
-                <Route path="/dashboards/dispatcher" element={<ProtectedRoute><DispatcherDashboard /></ProtectedRoute>} />
-                <Route path="/dashboards/safety" element={<ProtectedRoute><SafetyDashboard /></ProtectedRoute>} />
-                <Route path="/dashboards/financial" element={<ProtectedRoute><FinancialDashboard /></ProtectedRoute>} />
+                        {/* Specific Dashboards (Guarded) */}
+                        <Route path="dashboards/manager" element={<RoleRoute permission="view_dashboard"><ManagerDashboard /></RoleRoute>} />
+                        <Route path="dashboards/dispatcher" element={<RoleRoute permission="view_dashboard"><DispatcherDashboard /></RoleRoute>} />
+                        <Route path="dashboards/safety" element={<RoleRoute permission="view_dashboard"><SafetyDashboard /></RoleRoute>} />
+                        <Route path="dashboards/financial" element={<RoleRoute permission="view_dashboard"><FinancialDashboard /></RoleRoute>} />
 
-                {/* Fleet Management */}
-                <Route path="/vehicles/registry" element={<ProtectedRoute><VehicleRegistry /></ProtectedRoute>} />
-                <Route path="/drivers/profiles" element={<ProtectedRoute><DriverProfiles /></ProtectedRoute>} />
+                        {/* Fleet management */}
+                        <Route path="vehicles/registry" element={<RoleRoute permission="view_vehicles"><VehicleRegistry /></RoleRoute>} />
+                        <Route path="drivers/profiles" element={<RoleRoute permission="view_drivers"><DriverProfiles /></RoleRoute>} />
 
-                {/* Operations */}
-                <Route path="/trips/dispatcher" element={<ProtectedRoute><TripDispatcher /></ProtectedRoute>} />
-                <Route path="/maintenance/logs" element={<ProtectedRoute><MaintenanceLogs /></ProtectedRoute>} />
-                <Route path="/expenses/fuel-logs" element={<ProtectedRoute><ExpenseFuelLogs /></ProtectedRoute>} />
+                        {/* Operations */}
+                        <Route path="trips/dispatcher" element={<RoleRoute permission="view_trips"><TripDispatcher /></RoleRoute>} />
+                        <Route path="maintenance/logs" element={<RoleRoute permission="view_maintenance"><MaintenanceLogs /></RoleRoute>} />
+                        <Route path="expenses/fuel-logs" element={<RoleRoute permission="view_expenses"><ExpenseFuelLogs /></RoleRoute>} />
 
-                {/* Data & Insights */}
-                <Route path="/analytics/reports" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+                        {/* Data & Insights */}
+                        <Route path="analytics/reports" element={<RoleRoute permission="view_analytics"><Analytics /></RoleRoute>} />
+                    </Route>
 
-                {/* Fallback */}
-                <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+                    {/* 404 Fallback */}
+                    <Route path="/404" element={<NotFound />} />
+                    <Route path="*" element={<Navigate to="/404" replace />} />
+                </Routes>
+            </Suspense>
         </BrowserRouter>
     );
 }
