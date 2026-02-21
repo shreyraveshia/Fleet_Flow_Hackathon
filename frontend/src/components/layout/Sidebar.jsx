@@ -24,12 +24,12 @@ import { cn } from '../../lib/utils';
 
 const NAV_ITEMS = [
     { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, permission: 'view_dashboard' },
-    { label: 'Vehicles', path: '/vehicles', icon: Truck, permission: 'view_vehicles' },
-    { label: 'Trip Dispatch', path: '/trips', icon: MapPin, permission: 'view_trips' },
-    { label: 'Maintenance', path: '/maintenance', icon: Wrench, permission: 'view_maintenance' },
-    { label: 'Expenses', path: '/expenses', icon: Receipt, permission: 'view_expenses' },
-    { label: 'Drivers', path: '/drivers', icon: Users, permission: 'view_drivers' },
-    { label: 'Analytics', path: '/analytics', icon: BarChart2, permission: 'view_analytics' },
+    { label: 'Vehicles', path: '/dashboard/vehicles/registry', icon: Truck, permission: 'view_vehicles' },
+    { label: 'Trip Dispatch', path: '/dashboard/trips/dispatcher', icon: MapPin, permission: 'view_trips' },
+    { label: 'Maintenance', path: '/dashboard/maintenance/logs', icon: Wrench, permission: 'view_maintenance' },
+    { label: 'Expenses', path: '/dashboard/expenses/fuel-logs', icon: Receipt, permission: 'view_expenses' },
+    { label: 'Drivers', path: '/dashboard/drivers/profiles', icon: Users, permission: 'view_drivers' },
+    { label: 'Analytics', path: '/dashboard/analytics/reports', icon: BarChart2, permission: 'view_analytics' },
 ];
 
 export default function Sidebar({ isOpen, onToggle }) {

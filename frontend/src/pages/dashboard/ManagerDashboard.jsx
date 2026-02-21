@@ -103,7 +103,7 @@ export default function ManagerDashboard() {
                         <Button variant="outline" size="sm" onClick={fetchDashboard} disabled={isLoading}>
                             Refresh
                         </Button>
-                        <Button size="sm" onClick={() => navigate('/analytics')}>
+                        <Button size="sm" onClick={() => navigate('/dashboard/analytics/reports')}>
                             <BarChart3 className="h-4 w-4 mr-2" />
                             Full Reports
                         </Button>
@@ -153,7 +153,7 @@ export default function ManagerDashboard() {
                                 <MapPin className="h-5 w-5 text-blue-500" />
                                 Recent Trip Activity
                             </CardTitle>
-                            <Button variant="ghost" size="sm" onClick={() => navigate('/trips')}>
+                            <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard/trips/dispatcher')}>
                                 View All
                             </Button>
                         </CardHeader>
@@ -208,11 +208,11 @@ export default function ManagerDashboard() {
                             <div className="mt-8 space-y-3">
                                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1">Quick Actions</p>
                                 <div className="grid grid-cols-2 gap-3">
-                                    <Button variant="outline" className="h-20 flex-col gap-2 rounded-xl text-xs font-bold group" onClick={() => navigate('/vehicles?action=add')}>
+                                    <Button variant="outline" className="h-20 flex-col gap-2 rounded-xl text-xs font-bold group" onClick={() => navigate('/dashboard/vehicles/registry?action=add')}>
                                         <PlusCircle className="h-5 w-5 text-blue-500 group-hover:scale-110 transition-transform" />
                                         Add Vehicle
                                     </Button>
-                                    <Button variant="outline" className="h-20 flex-col gap-2 rounded-xl text-xs font-bold group" onClick={() => navigate('/trips?action=create')}>
+                                    <Button variant="outline" className="h-20 flex-col gap-2 rounded-xl text-xs font-bold group" onClick={() => navigate('/dashboard/trips/dispatcher?action=create')}>
                                         <MapPin className="h-5 w-5 text-emerald-500 group-hover:scale-110 transition-transform" />
                                         Create Trip
                                     </Button>

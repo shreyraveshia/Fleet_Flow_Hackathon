@@ -127,8 +127,7 @@ export default function SafetyDashboard() {
                                 columns={leaderboardColumns}
                                 data={stats.leaderboard}
                                 isLoading={isLoading}
-                                searchable={true}
-                                searchPlaceholder="Search driver name..."
+                                searchable={false}
                             />
                         </CardContent>
                     </Card>
@@ -171,7 +170,12 @@ export default function SafetyDashboard() {
                                                 <span className="text-[10px] font-mono text-slate-400 underline decoration-slate-200">
                                                     Expires: {formatDate(alert.expiryDate, 'MMM dd, yyyy')}
                                                 </span>
-                                                <Button size="xs" variant="outline" className="h-6 text-[10px] px-2 font-bold">
+                                                <Button
+                                                    size="xs"
+                                                    variant="outline"
+                                                    className="h-6 text-[10px] px-2 font-bold"
+                                                    onClick={() => success(`Notification sent to ${alert.driverName}`)}
+                                                >
                                                     Notify Driver
                                                 </Button>
                                             </div>
@@ -203,14 +207,21 @@ export default function SafetyDashboard() {
                                                 <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
                                                 <span className="text-sm font-bold">{d.name}</span>
                                             </div>
-                                            <Button variant="link" className="text-blue-400 h-auto p-0 text-xs font-bold hover:text-blue-300">
+                                            <Button
+                                                variant="link"
+                                                className="text-blue-400 h-auto p-0 text-xs font-bold hover:text-blue-300"
+                                                onClick={() => success(`Viewing details for ${d.name}`)}
+                                            >
                                                 Details
                                             </Button>
                                         </div>
                                     ))
                                 )}
                             </div>
-                            <Button className="w-full mt-6 bg-slate-800 hover:bg-slate-700 text-white border-slate-700 text-xs py-1.5 h-8">
+                            <Button
+                                className="w-full mt-6 bg-slate-800 hover:bg-slate-700 text-white border-slate-700 text-xs py-1.5 h-8"
+                                onClick={() => success('Compliance audit report generated')}
+                            >
                                 Generate Audit Report
                             </Button>
                         </CardContent>

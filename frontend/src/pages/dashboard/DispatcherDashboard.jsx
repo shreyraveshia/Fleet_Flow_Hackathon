@@ -8,8 +8,10 @@ import {
     ChevronRight,
     ArrowRight,
     Clock,
-    ExternalLink
+    ExternalLink,
+    MoveRight
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { analyticsAPI } from '../../api/analytics.api';
 import { tripAPI } from '../../api/trip.api';
 import { vehicleAPI } from '../../api/vehicle.api';
@@ -30,6 +32,7 @@ export default function DispatcherDashboard() {
     const [data, setData] = React.useState(null);
     const [availableData, setAvailableData] = React.useState({ vehicles: [], drivers: [] });
     const [isLoading, setIsLoading] = React.useState(true);
+    const navigate = useNavigate();
     const { on, off } = useSocket();
     const { success, error } = useToast();
 
@@ -43,8 +46,8 @@ export default function DispatcherDashboard() {
             ]);
             setData(dashRes.data);
             setAvailableData({
-                vehicles: vehiclesRes.data.vehicles.slice(0, 5),
-                drivers: driversRes.data.drivers.slice(0, 5)
+                vehicles: (vehiclesRes.data || []).slice(0, 5),
+                drivers: (driversRes.data || []).slice(0, 5)
             });
         } catch (err) {
             console.error('Failed to fetch dispatcher dashboard:', err);
@@ -82,8 +85,8 @@ export default function DispatcherDashboard() {
         if (!nextStatus) return;
 
         try {
-            await tripAPI.updateStatus(tripId, nextStatus);
-            success(`Trip ${tripId} status updated to ${nextStatus}`);
+            await tripAPI.advanceStatus(tripId, { status: nextStatus });
+            success(`Trip status updated to ${nextStatus}`);
             fetchData();
         } catch (err) {
             error(err.message || 'Failed to update status');
@@ -232,6 +235,7 @@ export default function DispatcherDashboard() {
                 size="lg"
                 className="fixed bottom-8 right-8 h-14 w-14 rounded-full shadow-2xl bg-blue-600 hover:bg-blue-700 flex items-center justify-center p-0 z-50 group hover:scale-110 transition-all border-4 border-white dark:border-slate-900"
                 title="Create New Trip"
+                onClick={() => navigate('/dashboard/trips/dispatcher?action=create')}
             >
                 <Plus className="h-7 w-7 text-white" />
             </Button>

@@ -147,6 +147,11 @@ export default function DriverProfiles() {
         });
     };
 
+    const handleFilterChange = (newFilters) => {
+        setFilters(newFilters);
+        setPagination(prev => ({ ...prev, page: 1 }));
+    };
+
     const getExpiryDisplay = (expiryDate) => {
         const days = differenceInDays(new Date(expiryDate), new Date());
         if (isPast(new Date(expiryDate))) return { label: 'EXPIRED', class: 'bg-red-500 text-white', indicator: 'text-red-500' };
@@ -296,7 +301,7 @@ export default function DriverProfiles() {
                     <Input
                         placeholder="Search by name or license..."
                         className="pl-10 h-10 rounded-xl"
-                        onChange={(e) => setFilters({ search: e.target.value })}
+                        onChange={(e) => handleFilterChange({ search: e.target.value })}
                     />
                 </div>
             </div>
@@ -364,7 +369,17 @@ export default function DriverProfiles() {
                 </div>
             ) : (
                 <Card className="border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                    <DataTable columns={columns} data={drivers} isLoading={isLoading} total={total} onPageChange={(p) => setPagination(pv => ({ ...pv, page: p }))} onLimitChange={(l) => setPagination(pv => ({ ...pv, limit: l }))} />
+                    <DataTable
+                        columns={columns}
+                        data={drivers}
+                        isLoading={isLoading}
+                        total={total}
+                        page={pagination.page}
+                        limit={pagination.limit}
+                        onPageChange={(p) => setPagination(pv => ({ ...pv, page: p }))}
+                        onLimitChange={(l) => setPagination(pv => ({ ...pv, limit: l }))}
+                        searchable={false}
+                    />
                 </Card>
             )}
 

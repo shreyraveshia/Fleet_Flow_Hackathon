@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
     Plus,
     Search,
@@ -75,6 +75,7 @@ export default function TripDispatcher() {
         tripTimeline
     } = useTripStore();
 
+    const [searchParams, setSearchParams] = useSearchParams();
     const { availableVehicles, fetchAvailableVehicles } = useVehicleStore();
     const { availableDrivers, fetchAvailableDrivers } = useDriverStore();
     const { can } = useRBAC();
@@ -100,6 +101,15 @@ export default function TripDispatcher() {
         estimatedFuelCost: '',
         estimatedRevenue: ''
     });
+
+    // Handle initial action from search params
+    React.useEffect(() => {
+        if (searchParams.get('action') === 'create') {
+            handleOpenCreate();
+            // Clear the param so it doesn't re-open on refresh/navigate back
+            setSearchParams({}, { replace: true });
+        }
+    }, [searchParams, setSearchParams]);
 
     // Status Advance State
     const [statusAction, setStatusAction] = React.useState({ type: '', target: '' });

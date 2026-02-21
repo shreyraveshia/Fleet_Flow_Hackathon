@@ -79,7 +79,7 @@ export default function FinancialDashboard() {
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => downloadCSV(() => exportAPI.exportCSV('expenses'), 'financial_report.csv')}
+                            onClick={() => downloadCSV(() => exportAPI.expensesCSV(), 'financial_report.csv')}
                             disabled={isDownloading}
                             className="gap-2"
                         >
@@ -88,7 +88,7 @@ export default function FinancialDashboard() {
                         </Button>
                         <Button
                             size="sm"
-                            onClick={() => downloadPDF(() => exportAPI.exportPDF('analytics'), 'financial_summary.pdf')}
+                            onClick={() => downloadPDF(() => exportAPI.analyticsPDF(), 'financial_summary.pdf')}
                             disabled={isDownloading}
                             className="gap-2 bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20"
                         >
@@ -155,7 +155,7 @@ export default function FinancialDashboard() {
                         </CardTitle>
                         <CardDescription className="text-xs">Vehicles with the highest spend this month</CardDescription>
                     </div>
-                    <Button variant="ghost" size="sm" className="text-blue-600 font-bold" onClick={() => navigate('/expenses')}>
+                    <Button variant="ghost" size="sm" className="text-blue-600 font-bold" onClick={() => navigate('/dashboard/expenses/fuel-logs')}>
                         Monitor Expenses
                     </Button>
                 </CardHeader>

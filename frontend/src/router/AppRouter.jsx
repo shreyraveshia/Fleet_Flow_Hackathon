@@ -49,11 +49,13 @@ export default function AppRouter() {
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
 
+                    {/* Redirect base to login */}
+                    <Route path="/" element={<Navigate to="/login" replace />} />
+
                     {/* Protected Routes Wrapper */}
-                    <Route path="/" element={<ProtectedRoute><RoleLayout /></ProtectedRoute>}>
+                    <Route path="/dashboard" element={<ProtectedRoute><RoleLayout /></ProtectedRoute>}>
                         {/* Dashboard Home */}
                         <Route index element={<DashboardSwitcher />} />
-                        <Route path="dashboard" element={<Navigate to="/" replace />} />
 
                         {/* Specific Dashboards (Guarded) */}
                         <Route path="dashboards/manager" element={<RoleRoute permission="view_dashboard"><ManagerDashboard /></RoleRoute>} />

@@ -40,13 +40,16 @@ const QUICK_LOGINS = [
 export default function Login() {
     const [formData, setFormData] = React.useState({ email: '', password: '' });
     const [showPassword, setShowPassword] = React.useState(false);
-    const { login, isLoading, error: authError, clearError } = useAuthStore();
+    const { login, isAuthenticated, isLoading, error: authError, clearError } = useAuthStore();
     const { success: toastSuccess, error: toastError } = useToast();
     const navigate = useNavigate();
 
     React.useEffect(() => {
+        if (isAuthenticated) {
+            navigate('/dashboard');
+        }
         return () => clearError();
-    }, [clearError]);
+    }, [isAuthenticated, navigate, clearError]);
 
     const handleSubmit = async (e) => {
         e?.preventDefault();

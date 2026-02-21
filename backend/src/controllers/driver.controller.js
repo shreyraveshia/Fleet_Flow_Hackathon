@@ -72,6 +72,7 @@ export const getDrivers = asyncHandler(async (req, res) => {
             { name: searchRegex },
             { licenseNumber: searchRegex },
             { phone: searchRegex },
+            { licenseCategory: searchRegex },
         ];
     }
 

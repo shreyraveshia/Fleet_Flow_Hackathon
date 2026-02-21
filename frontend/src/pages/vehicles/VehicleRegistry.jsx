@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
     Truck,
     Bus,
@@ -49,6 +49,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '../../components/ui/dropdown-menu';
+import { Card, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { cn } from '../../lib/utils';
 import { format } from 'date-fns';
@@ -67,6 +68,7 @@ export default function VehicleRegistry() {
         setFilters
     } = useVehicleStore();
 
+    const [searchParams, setSearchParams] = useSearchParams();
     const { can } = useRBAC();
     const { success, error, info } = useToast();
     const { on, off } = useSocket();
@@ -83,6 +85,15 @@ export default function VehicleRegistry() {
     const [statusToChange, setStatusToChange] = React.useState('');
 
     const [pagination, setPagination] = React.useState({ page: 1, limit: 10 });
+
+    // Handle initial action from search params
+    React.useEffect(() => {
+        if (searchParams.get('action') === 'add') {
+            setIsAddModalOpen(true);
+            // Clear the param
+            setSearchParams({}, { replace: true });
+        }
+    }, [searchParams, setSearchParams]);
 
     React.useEffect(() => {
         fetchVehicles(pagination);
@@ -102,8 +113,15 @@ export default function VehicleRegistry() {
         info('License plate copied to clipboard');
     };
 
-    const clearFilters = () => {
-        setFilters({ search: '', type: '', status: '' });
+    // Reset to page 1 when filters change to avoid empty pages
+    const handleFilterChange = (newFilters) => {
+        setFilters(prev => ({ ...prev, ...newFilters }));
+        setPagination(prev => ({ ...prev, page: 1 }));
+    };
+
+    const handleClearFilters = () => {
+        setFilters({ search: '', type: 'All', status: 'All' });
+        setPagination(prev => ({ ...prev, page: 1 }));
     };
 
     // --- Handlers ---
@@ -113,14 +131,20 @@ export default function VehicleRegistry() {
         const data = Object.fromEntries(formData.entries());
 
         try {
+            // Map frontend field names to backend schema field names
             await createVehicle({
-                ...data,
-                plateNumber: data.plateNumber.toUpperCase(),
+                name: data.name,
+                licensePlate: data.plateNumber.toUpperCase(),   // schema uses licensePlate
+                make: data.make,
+                model: data.model,
+                type: data.type,
+                fuelType: data.fuelType,
+                maxLoadCapacity: parseInt(data.capacity),       // schema uses maxLoadCapacity
+                region: data.region,
                 year: parseInt(data.year),
-                capacity: parseInt(data.capacity),
-                odometer: parseInt(data.odometer),
+                odometer: parseInt(data.odometer) || 0,
                 nextServiceDue: parseInt(data.nextServiceDue),
-                acquisitionCost: parseInt(data.acquisitionCost),
+                acquisitionCost: parseInt(data.acquisitionCost) || 0,
             });
             success('Vehicle added successfully');
             setIsAddModalOpen(false);
@@ -136,10 +160,12 @@ export default function VehicleRegistry() {
 
         try {
             await updateVehicle(selectedVehicle._id, {
-                ...data,
-                plateNumber: data.plateNumber.toUpperCase(),
-                year: parseInt(data.year),
-                capacity: parseInt(data.capacity),
+                name: data.name,
+                licensePlate: data.plateNumber.toUpperCase(),   // schema uses licensePlate
+                make: data.make,
+                model: data.model,
+                region: data.region,
+                maxLoadCapacity: parseInt(data.capacity),       // schema uses maxLoadCapacity
                 odometer: parseInt(data.odometer),
                 nextServiceDue: parseInt(data.nextServiceDue),
             });
@@ -262,15 +288,14 @@ export default function VehicleRegistry() {
             label: '',
             render: (row) => (
                 <DropdownMenu>
-                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="h-8 w-8 p-0">
                             <MoreVertical className="h-4 w-4" />
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuLabel>Vehicle Actions</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => navigate(`/vehicles/${row._id}`)}>
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => info(`Vehicle detail view for ${row.plateNumber} coming soon!`)}>
                             <ExternalLink className="mr-2 h-4 w-4 text-blue-500" />
                             View Details
                         </DropdownMenuItem>
@@ -320,31 +345,37 @@ export default function VehicleRegistry() {
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <Input
-                        placeholder="Search by name, plate, or model..."
-                        className="pl-10"
+                        placeholder="Search by plate, name, or model..."
+                        className="pl-10 h-10 rounded-xl"
                         value={filters.search}
-                        onChange={(e) => setFilters({ search: e.target.value })}
+                        onChange={(e) => handleFilterChange({ search: e.target.value })}
                     />
                 </div>
                 <div className="flex gap-4 min-w-[320px]">
-                    <Select value={filters.type} onValueChange={(val) => setFilters({ type: val })}>
-                        <SelectTrigger className="w-full">
-                            <SelectValue placeholder="All Types" />
+                    <Select
+                        value={filters.type}
+                        onValueChange={(v) => handleFilterChange({ type: v })}
+                    >
+                        <SelectTrigger className="w-[150px] h-10 rounded-xl">
+                            <SelectValue placeholder="Type" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="">All Types</SelectItem>
+                            <SelectItem value="All">All Types</SelectItem>
                             <SelectItem value="Truck">Trucks</SelectItem>
                             <SelectItem value="Van">Vans</SelectItem>
                             <SelectItem value="Bike">Bikes</SelectItem>
                         </SelectContent>
                     </Select>
 
-                    <Select value={filters.status} onValueChange={(val) => setFilters({ status: val })}>
-                        <SelectTrigger className="w-full">
-                            <SelectValue placeholder="All Status" />
+                    <Select
+                        value={filters.status}
+                        onValueChange={(v) => handleFilterChange({ status: v })}
+                    >
+                        <SelectTrigger className="w-[150px] h-10 rounded-xl">
+                            <SelectValue placeholder="Status" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="">All Status</SelectItem>
+                            <SelectItem value="All">All Status</SelectItem>
                             <SelectItem value="Available">Available</SelectItem>
                             <SelectItem value="On Trip">On Trip</SelectItem>
                             <SelectItem value="In Shop">In Shop</SelectItem>
@@ -352,8 +383,8 @@ export default function VehicleRegistry() {
                         </SelectContent>
                     </Select>
 
-                    {(filters.search || filters.type || filters.status) && (
-                        <Button variant="ghost" size="icon" onClick={clearFilters} className="shrink-0 text-slate-400 hover:text-red-500">
+                    {(filters.search || filters.type !== 'All' || filters.status !== 'All') && (
+                        <Button variant="ghost" size="icon" onClick={handleClearFilters} className="shrink-0 text-slate-400 hover:text-red-500">
                             <X className="h-4 w-4" />
                         </Button>
                     )}
@@ -372,7 +403,9 @@ export default function VehicleRegistry() {
                         limit={pagination.limit}
                         onPageChange={(p) => setPagination(prev => ({ ...prev, page: p }))}
                         onLimitChange={(l) => setPagination(prev => ({ ...prev, limit: l }))}
-                        onRowClick={(row) => navigate(`/vehicles/${row._id}`)}
+                        searchable={false}
+                        emptyMessage="No vehicles found matching your filters."
+                        onRowClick={(row) => info(`Vehicle detail view for ${row.plateNumber || row.name} coming soon!`)}
                     />
                 </CardContent>
             </Card>
@@ -436,7 +469,6 @@ export default function VehicleRegistry() {
                                         <SelectItem value="Diesel">Diesel</SelectItem>
                                         <SelectItem value="Petrol">Petrol</SelectItem>
                                         <SelectItem value="Electric">Electric</SelectItem>
-                                        <SelectItem value="CNG">CNG</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>

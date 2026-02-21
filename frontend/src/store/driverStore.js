@@ -14,7 +14,13 @@ export const useDriverStore = create((set, get) => ({
     fetchDrivers: async (params) => {
         set({ isLoading: true, error: null });
         try {
-            const response = await driverAPI.getAll({ ...get().filters, ...params });
+            const filters = { ...get().filters };
+            // Normalize "All" values to empty strings for API
+            Object.keys(filters).forEach(key => {
+                if (filters[key] === 'All') filters[key] = '';
+            });
+
+            const response = await driverAPI.getAll({ ...filters, ...params });
             set({
                 drivers: response.data.drivers,
                 total: response.data.total,

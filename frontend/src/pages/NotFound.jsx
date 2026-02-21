@@ -28,7 +28,7 @@ export default function NotFound() {
                     variant="primary"
                     size="lg"
                     className="w-full bg-blue-600 hover:bg-blue-700 shadow-xl shadow-blue-200 gap-2"
-                    onClick={() => navigate('/')}
+                    onClick={() => navigate('/dashboard')}
                 >
                     <MoveLeft className="h-4 w-4" />
                     Return to Dashboard

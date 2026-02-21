@@ -26,16 +26,16 @@ import { Avatar, AvatarFallback } from '../ui/avatar';
 
 const PAGE_TITLES = {
     '/dashboard': 'Dashboard Overview',
-    '/vehicles': 'Vehicle Management',
-    '/trips': 'Trip Dispatch & Tracking',
-    '/maintenance': 'Maintenance Scheduling',
-    '/expenses': 'Expense Tracking',
-    '/drivers': 'Driver Management',
-    '/analytics': 'Fleet Analytics',
-    '/reports': 'System Reports',
-    '/notifications': 'All Notifications',
-    '/profile': 'My Profile',
-    '/settings': 'System Settings',
+    '/dashboard/vehicles/registry': 'Vehicle Management',
+    '/dashboard/trips/dispatcher': 'Trip Dispatch & Tracking',
+    '/dashboard/maintenance/logs': 'Maintenance Scheduling',
+    '/dashboard/expenses/fuel-logs': 'Expense Tracking',
+    '/dashboard/drivers/profiles': 'Driver Management',
+    '/dashboard/analytics/reports': 'Fleet Analytics',
+    '/dashboard/reports': 'System Reports',
+    '/dashboard/notifications': 'All Notifications',
+    '/dashboard/profile': 'My Profile',
+    '/dashboard/settings': 'System Settings',
 };
 
 export default function Topbar({ onSidebarToggle }) {
@@ -111,13 +111,13 @@ export default function Topbar({ onSidebarToggle }) {
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem asChild>
-                                <Link to="/profile" className="cursor-pointer">
+                                <Link to="/dashboard/profile" className="cursor-pointer">
                                     <User className="mr-2 h-4 w-4" />
                                     <span>My Profile</span>
                                 </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem asChild>
-                                <Link to="/settings" className="cursor-pointer">
+                                <Link to="/dashboard/settings" className="cursor-pointer">
                                     <Settings className="mr-2 h-4 w-4" />
                                     <span>Settings</span>
                                 </Link>

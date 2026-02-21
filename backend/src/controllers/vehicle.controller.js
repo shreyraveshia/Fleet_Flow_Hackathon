@@ -19,11 +19,21 @@ export const getVehicles = asyncHandler(async (req, res) => {
         limit = 50,
     } = req.query;
 
-    const query = { isRetired: false };
+    const query = {};
 
-    if (status) query.status = status;
+    if (status) {
+        query.status = status;
+        // If user specifically filters for 'Retired', we don't automatically exclude them
+    }
+
     if (type) query.type = type;
     if (region) query.region = region;
+
+    // By default, exclude retired vehicles unless specifically requested or if it's an admin/manager view
+    // Here we check if status is specifically 'Retired', if not, we apply the exclusion
+    if (status !== 'Retired') {
+        query.isRetired = false;
+    }
 
     if (search) {
         const searchRegex = new RegExp(search, 'i');
@@ -31,6 +41,8 @@ export const getVehicles = asyncHandler(async (req, res) => {
             { name: searchRegex },
             { licensePlate: searchRegex },
             { model: searchRegex },
+            { make: searchRegex },
+            { type: searchRegex }
         ];
     }
 

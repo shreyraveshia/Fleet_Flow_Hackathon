@@ -13,7 +13,13 @@ export const useVehicleStore = create((set, get) => ({
     fetchVehicles: async (params) => {
         set({ isLoading: true, error: null });
         try {
-            const response = await vehicleAPI.getAll({ ...get().filters, ...params });
+            const filters = { ...get().filters };
+            // Normalize "All" values to empty strings for API
+            Object.keys(filters).forEach(key => {
+                if (filters[key] === 'All') filters[key] = '';
+            });
+
+            const response = await vehicleAPI.getAll({ ...filters, ...params });
             set({
                 vehicles: response.data.vehicles,
                 total: response.data.total,
