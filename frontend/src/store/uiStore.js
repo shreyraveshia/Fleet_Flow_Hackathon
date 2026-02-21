@@ -5,6 +5,7 @@ export const useUIStore = create((set) => ({
     sidebarOpen: true,
     activeModal: null,
     modalData: null,
+    auditDrawerOpen: false,
 
     toggleDarkMode: () => {
         set((state) => {
@@ -38,4 +39,6 @@ export const useUIStore = create((set) => ({
     openModal: (name, data = null) => set({ activeModal: name, modalData: data }),
 
     closeModal: () => set({ activeModal: null, modalData: null }),
+
+    setAuditDrawerOpen: (isOpen) => set({ auditDrawerOpen: isOpen }),
 }));
