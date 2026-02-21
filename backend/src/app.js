@@ -5,9 +5,9 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
-import rateLimit from 'express-rate-limit';
 
-import errorHandler from './middleware/errorHandler.js';
+import errorHandler from './middleware/error.middleware.js';
+import { apiLimiter } from './middleware/rateLimiter.middleware.js';
 
 // ─── Route Imports ───────────────────────────────────────────────────────────
 import authRoutes from './routes/auth.routes.js';
@@ -53,19 +53,7 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // ─── Rate Limiting ────────────────────────────────────────────────────────────
-const apiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 500,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: {
-        success: false,
-        message: 'Too many requests from this IP, please try again after 15 minutes.',
-        data: null,
-    },
-    skip: (req) => process.env.NODE_ENV === 'development',
-});
-
+// Apply custom API limiter from middleware/rateLimiter.middleware.js
 app.use('/api', apiLimiter);
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
@@ -106,6 +94,7 @@ app.use((req, res) => {
 });
 
 // ─── Global Error Handler (must be last) ─────────────────────────────────────
+// Uses the custom error handler from middleware/error.middleware.js
 app.use(errorHandler);
 
 export default app;
